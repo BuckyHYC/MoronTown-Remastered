@@ -218,3 +218,10 @@
   - high + 夜间 + 下雨：平均 161.1 / 1% low 81.3。
 - 结论：高档 1080p 远超 60fps 目标；low 档继续供无头 CI（SwiftShader 153 drawcall / 371k 三角）。
 - `tools/perf-probe.mjs` 增加第 4 个参数（附加 query，如 `"&time=night&rain=1"`）与行驶采样。
+
+## Round 29：夜间灯光按物理单位修正 + 基准图集
+
+- three r155+ 灯光用物理单位，原来车灯 intensity=70cd / 路灯 26cd 实际几乎不可见：车灯改 900cd、路灯 220cd、座舱补光 9cd，夜间车头光斑与路灯地池恢复正常。
+- 新增夜间「英雄光」：车顶后侧暖色 62cd + 前侧冷色 28cd 点光（不投影，常驻避免重编译），暗场下车身轮廓可读。
+- 新增 `tools/gallery.mjs`：一次抓 6 张 1600×900 基准图（menu / garage / day-chase / night-chase / night-rain / cockpit），走独显渲染。
+- 回归：build + vitest 9 + e2e 12 全绿；高档行驶 149.7fps（1% low 54.6）。

@@ -97,6 +97,8 @@ class Game {
   private headlights: THREE.SpotLight[] = [];
   private readonly lampLights: THREE.PointLight[] = [];
   private cockpitLight: THREE.PointLight | null = null;
+  private heroLight: THREE.PointLight | null = null;
+  private heroFill: THREE.PointLight | null = null;
   private lampTimer = 0;
 
   constructor(container: HTMLElement, tier: QualityTier) {
@@ -254,9 +256,11 @@ class Game {
     this.reflector?.setWetness(Math.min(1, preset.wetness + (this.rainOn ? 0.6 : 0)));
     const headStrength = preset.lamp > 0.25 ? preset.lamp : 0;
     for (const spot of this.headlights) {
-      spot.intensity = headStrength * 70;
+      spot.intensity = headStrength * 900;
       spot.visible = headStrength > 0.05;
     }
+    if (this.heroLight) this.heroLight.intensity = preset.lamp * 62;
+    if (this.heroFill) this.heroFill.intensity = preset.lamp * 28;
     if (this.mode === 'drive') {
       this.hud.toast(`${preset.label}${instant ? '' : ' · 已切换'}`, 'info');
     }
@@ -413,7 +417,7 @@ class Game {
     // 座舱视角隐藏车外壳（保留内饰），菜单/拍照/其它视角恢复
     const cockpit = this.mode !== 'menu' && this.photo === null && this.rig.mode === 'cockpit';
     this.vehicle.setCockpit(cockpit);
-    if (this.cockpitLight) this.cockpitLight.intensity = cockpit ? 1.35 : 0;
+    if (this.cockpitLight) this.cockpitLight.intensity = cockpit ? 9 : 0;
     const x = s.prevX + (s.x - s.prevX) * alpha;
     const z = s.prevZ + (s.z - s.prevZ) * alpha;
     const heading = s.prevHeading + (s.heading - s.prevHeading) * alpha;
@@ -816,6 +820,16 @@ class Game {
     cabin.position.set(-0.28, 1.25, 0.55);
     this.vehicle.root.add(cabin);
     this.cockpitLight = cabin;
+
+    // 夜间「英雄光」：暖色轮廓光 + 冷色补光，让车身在暗场里仍可读（不投影）
+    const hero = new THREE.PointLight(0xffcf9a, 0, 26, 2);
+    hero.position.set(-2.6, 4.2, -3.4);
+    this.vehicle.root.add(hero);
+    this.heroLight = hero;
+    const fill = new THREE.PointLight(0xa9c8ff, 0, 20, 2);
+    fill.position.set(3.2, 2.4, 2.6);
+    this.vehicle.root.add(fill);
+    this.heroFill = fill;
   }
 
   private updateLampLights(dt: number): void {
@@ -826,7 +840,7 @@ class Game {
     }
     for (const light of this.lampLights) {
       light.visible = true;
-      light.intensity = strength * 26;
+      light.intensity = strength * 220;
     }
     this.lampTimer -= dt;
     if (this.lampTimer > 0) return;
@@ -1004,4 +1018,7 @@ async function main(): Promise<void> {
 }
 
 void main();
+
+
+
 

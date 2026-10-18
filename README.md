@@ -60,6 +60,18 @@ tools/         GLB 探针、截图、性能探针、诊断脚本
 docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 ```
 
+## 截图
+
+| 主菜单 | 白天追尾 |
+|---|---|
+| ![menu](docs/screenshots/menu-day.png) | ![day](docs/screenshots/day-chase.png) |
+
+| 夜间雨天 | 座舱视角 |
+|---|---|
+| ![night rain](docs/screenshots/night-rain.png) | ![cockpit](docs/screenshots/cockpit.png) |
+
+基准图由 `node tools/gallery.mjs` 生成（1600×900，独显渲染）。
+
 ## 素材许可
 
 本项目使用 Khronos `CarConcept` 模型（**CC BY 4.0**，作者 Eric Chadwick / Darmstadt Graphics Group GmbH），
@@ -71,6 +83,7 @@ docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 - [docs/ART-BIBLE.md](docs/ART-BIBLE.md)：画质目标、色板、材质与 HUD 栅格
 - [docs/ASSETS.md](docs/ASSETS.md)：资产清单、许可与优化流程
 - [docs/STATUS.md](docs/STATUS.md)：里程碑进度、实测数据、已知缺口
+
 
 
 
