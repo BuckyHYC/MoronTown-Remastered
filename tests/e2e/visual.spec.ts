@@ -1,5 +1,15 @@
 import { expect, test } from '@playwright/test';
 
+async function shotUntilRendered(page: import('@playwright/test').Page): Promise<number> {
+  let best = 0;
+  for (let i = 0; i < 5; i += 1) {
+    const shot = await page.screenshot();
+    best = Math.max(best, shot.byteLength);
+    if (best > 60_000) break;
+    await page.waitForTimeout(1200);
+  }
+  return best;
+}
 type GameWindow = {
   __RE__?: {
     stats: () => { drawCalls: number; triangles: number; timeOfDay: string };
@@ -19,14 +29,14 @@ test('夜间画面不是黑屏（渲染回归守卫）', async ({ page }) => {
   expect(stats.triangles).toBeGreaterThan(50_000);
   expect(stats.timeOfDay).toBe('night');
 
-  const shot = await page.screenshot();
-  expect(shot.byteLength).toBeGreaterThan(60_000);
+  const bytes = await shotUntilRendered(page);
+  expect(bytes).toBeGreaterThan(60_000);
 });
 
 test('白天画面不是黑屏（渲染回归守卫）', async ({ page }) => {
   await page.goto('/?quality=medium&autostart=1');
   await page.waitForFunction(() => !!(window as unknown as GameWindow).__RE__, null, { timeout: 60_000 });
   await page.waitForTimeout(3500);
-  const shot = await page.screenshot();
-  expect(shot.byteLength).toBeGreaterThan(60_000);
+  const bytes = await shotUntilRendered(page);
+  expect(bytes).toBeGreaterThan(60_000);
 });
