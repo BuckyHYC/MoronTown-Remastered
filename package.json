@@ -1,0 +1,29 @@
+{
+  "name": "fenza-road-re",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FenzaRoad RE — 从零重构的城市竞速重置版",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "assets": "node tools/fetch-assets.mjs",
+    "shot": "node tools/shot.mjs",
+    "perf": "node tools/perf-probe.mjs"
+  },
+  "dependencies": {
+    "three": "^0.178.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/cli": "^4.2.0",
+    "@playwright/test": "^1.62.1",
+    "@types/three": "^0.178.1",
+    "tweakpane": "^4.0.5",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "^3.2.4"
+  }
+}
