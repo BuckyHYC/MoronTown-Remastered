@@ -45,6 +45,39 @@ export class CityWorld {
     this.addBuildings();
     this.addLamps();
     this.addTrees();
+    this.addBoundary();
+  }
+
+  /** 2.4m 围墙：把城市边界封住，避免开出城区看到草地/地平线 */
+  private addBoundary(): void {
+    const span = this.span;
+    const outer = 16;
+    const height = 2.4;
+    const thickness = 1.4;
+    const mat = new THREE.MeshStandardMaterial({ color: 0x7b7a72, roughness: 0.92, metalness: 0.04 });
+    const walls = [
+      { x: span / 2, z: -outer, w: span + outer * 2, d: thickness },
+      { x: span / 2, z: span + outer, w: span + outer * 2, d: thickness },
+      { x: -outer, z: span / 2, w: thickness, d: span + outer * 2 },
+      { x: span + outer, z: span / 2, w: thickness, d: span + outer * 2 },
+    ];
+    const geos: THREE.BufferGeometry[] = [];
+    for (const wall of walls) {
+      const g = new THREE.BoxGeometry(wall.w, height, wall.d);
+      g.translate(wall.x, height / 2, wall.z);
+      geos.push(g);
+      this.colliders.push({
+        minX: wall.x - wall.w / 2,
+        maxX: wall.x + wall.w / 2,
+        minZ: wall.z - wall.d / 2,
+        maxZ: wall.z + wall.d / 2,
+      });
+    }
+    const mesh = new THREE.Mesh(mergeGeometries(geos, false)!, mat);
+    mesh.name = 'city-boundary';
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    this.group.add(mesh);
   }
 
   setNight(value: number): void {

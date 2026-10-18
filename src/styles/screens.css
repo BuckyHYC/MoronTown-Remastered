@@ -319,3 +319,26 @@
 .career-achievements {
   grid-column: 1 / -1;
 }
+
+/* 车库展台：面板靠右，左侧留出 3D 车模展示区 */
+.garage {
+  place-items: center end;
+  padding: 0 3.2vw 0 0;
+  background: radial-gradient(125% 85% at 22% 55%, rgba(6, 10, 16, 0.1), rgba(4, 7, 12, 0.66));
+  backdrop-filter: none;
+}
+
+.garage .garage-panel {
+  width: min(640px, 48vw);
+}
+
+@media (max-width: 900px) {
+  .garage {
+    place-items: center;
+    padding: 0;
+    background: radial-gradient(120% 80% at 50% 45%, rgba(6, 10, 16, 0.5), rgba(4, 7, 12, 0.92));
+  }
+  .garage .garage-panel {
+    width: min(880px, 92vw);
+  }
+}

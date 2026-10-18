@@ -29,13 +29,21 @@ export class Pedestrians {
     this.span = blocks * this.blockLength;
     this.group.name = 'pedestrians';
 
-    const body = new THREE.CylinderGeometry(0.22, 0.26, 1.1, 8);
-    body.translate(0, 0.8, 0);
-    const head = new THREE.SphereGeometry(0.19, 10, 8);
-    head.translate(0, 1.52, 0);
-    const legs = new THREE.BoxGeometry(0.34, 0.6, 0.22);
-    legs.translate(0, 0.3, 0);
-    const geometry = mergeGeometries([body, head, legs], false)!;
+    const body = new THREE.CapsuleGeometry(0.2, 0.52, 3, 8);
+    body.translate(0, 0.92, 0);
+    const head = new THREE.SphereGeometry(0.175, 10, 8);
+    head.translate(0, 1.5, 0);
+    const neck = new THREE.CylinderGeometry(0.08, 0.1, 0.12, 6);
+    neck.translate(0, 1.32, 0);
+    const legL = new THREE.BoxGeometry(0.13, 0.62, 0.17);
+    legL.translate(-0.09, 0.31, 0);
+    const legR = legL.clone();
+    legR.translate(0.18, 0, 0);
+    const armL = new THREE.CapsuleGeometry(0.065, 0.42, 2, 6);
+    armL.translate(-0.27, 0.98, 0);
+    const armR = armL.clone();
+    armR.translate(0.54, 0, 0);
+    const geometry = mergeGeometries([body, head, neck, legL, legR, armL, armR], false)!;
 
     const material = new THREE.MeshStandardMaterial({
       color: 0xffffff,

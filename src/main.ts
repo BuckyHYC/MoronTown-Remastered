@@ -112,7 +112,7 @@ class Game {
 
     this.signage = new Signage(this.world.footprints, 150);
     this.scene.add(this.signage.group);
-    this.traffic = new Traffic(this.scene, 4, 48);
+    this.traffic = new Traffic(this.scene, WORLD.GRID_SIZE, 48);
 
     if (this.world.roadGeometry && this.engine.quality.reflection !== 'off') {
       const half = this.engine.quality.reflection === 'half' ? 0.5 : 0.4;
@@ -153,7 +153,7 @@ class Game {
       onClaimQuest: (id) => this.claimQuest(id),
       onClose: () => this.menu?.show(),
     });
-    this.peds = new Pedestrians(this.scene, 4, 72);
+    this.peds = new Pedestrians(this.scene, WORLD.GRID_SIZE, 72);
     this.tasks = new TaskPoints([
       { x: 300, z: 300, layoutIndex: 0, label: '城市环路' },
       { x: 750, z: 450, layoutIndex: 1, label: '城市巡回' },
@@ -436,15 +436,29 @@ class Game {
     );
 
     if (this.mode === 'menu') {
-      const radius = 12.8;
-      const angle = this.menuAngle + Math.sin(this.elapsed * 0.22) * 0.12;
-      this.camera.position.set(
-        x + Math.sin(angle) * radius,
-        3.1,
-        z + Math.cos(angle) * radius,
-      );
-      this.camera.lookAt(x, 0.92, z);
-      this.camera.fov = 42;
+      // 车库打开时切展台机位：绕车慢转、贴近车身，露出左侧 3D 车模
+      const showcase = this.garage.visible;
+      // 展台补光：白天也把车身打亮，夜里沿用时段强度
+      const stage = Math.max(TIME_PRESETS[this.timeId].lamp, showcase ? 0.55 : 0);
+      if (this.heroLight) this.heroLight.intensity = stage * 62;
+      if (this.heroFill) this.heroFill.intensity = stage * 28;
+      const radius = showcase ? 10.2 : 12.8;
+      const height = showcase ? 2.15 : 3.1;
+      const angle = showcase
+        ? this.menuAngle + this.elapsed * 0.26
+        : this.menuAngle + Math.sin(this.elapsed * 0.22) * 0.12;
+      const camX = x + Math.sin(angle) * radius;
+      const camZ = z + Math.cos(angle) * radius;
+      this.camera.position.set(camX, height, camZ);
+      if (showcase) {
+        // 面板占右侧：把注视点向右偏移，让车模落在左半屏
+        const fx = (x - camX) / radius;
+        const fz = (z - camZ) / radius;
+        this.camera.lookAt(x - fz * 1.55, 0.74, z + fx * 1.55);
+      } else {
+        this.camera.lookAt(x, 0.92, z);
+      }
+      this.camera.fov = showcase ? 38 : 42;
       this.camera.updateProjectionMatrix();
       return;
     }
@@ -1018,6 +1032,9 @@ async function main(): Promise<void> {
 }
 
 void main();
+
+
+
 
 
 
