@@ -1,5 +1,6 @@
 import './styles/base.css';
 import './styles/menu.css';
+import './styles/race.css';
 import * as THREE from 'three';
 // 调试期暴露（供 tools/diag.mjs 计算包围盒）
 (window as unknown as Record<string, unknown>).THREE = THREE;
@@ -13,6 +14,9 @@ import { VehicleDynamics } from './gameplay/Dynamics';
 import { CameraRig } from './gameplay/CameraRig';
 import { InputSystem } from './gameplay/Input';
 import { Traffic } from './gameplay/Traffic';
+import { AiRacers } from './gameplay/AiRacers';
+import { RaceManager, type RaceResult } from './gameplay/RaceManager';
+import { RaceUi, type RaceSetup } from './ui/RaceUi';
 import { Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 import { GameClock } from './core/Clock';
@@ -38,6 +42,10 @@ class Game {
   readonly world: CityWorld;
   readonly signage: Signage;
   readonly traffic: Traffic;
+  readonly raceUi: RaceUi;
+  private race: RaceManager | null = null;
+  private aiRacers: AiRacers | null = null;
+  private lastSetup: RaceSetup | null = null;
   readonly reflector: PlanarReflector | null = null;
   readonly vehicle: VehicleModel;
   readonly dynamics: VehicleDynamics;
@@ -48,7 +56,7 @@ class Game {
   readonly save = new SaveStore();
   readonly uiRoot: HTMLElement;
   timeId: TimeId = 'day';
-  private mode: 'menu' | 'drive' = 'menu';
+  private mode: 'menu' | 'drive' | 'race' = 'menu';
   private elapsed = 0;
   private raceTimeMs = 0;
   private readonly colliders: Aabb[] = [];
@@ -87,6 +95,7 @@ class Game {
     const ui = document.getElementById('ui') ?? container;
     this.uiRoot = ui;
     this.hud = new Hud(ui);
+    this.raceUi = new RaceUi(ui);
     this.clock = new GameClock(PHYSICS.FIXED_STEP);
     this.input.attach(this.engine.canvas);
 
@@ -104,6 +113,7 @@ class Game {
 
     this.menu = new Menu(this.uiRoot, {
       onStart: () => this.startDrive(),
+      onRace: () => this.openRaceSetup(),
       onTime: (id: TimeId) => {
         this.setTime(id, true);
         this.menu?.setActiveTime(id);
@@ -166,15 +176,20 @@ class Game {
     const dt = this.clock.stepSeconds;
     const frameDt = info.frameDt;
 
-    if (this.mode === 'drive') {
+    if (this.mode !== 'menu') {
+      const locked = this.race?.phase === 'countdown';
+      const driveInput = locked
+        ? { throttle: 0, brake: 0, steer: 0, handbrake: true }
+        : this.input.state;
       for (let i = 0; i < info.steps; i += 1) {
-        this.dynamics.step(dt, this.input.state);
+        this.dynamics.step(dt, driveInput);
         this.resolveCollisions();
       }
     }
 
     this.updateWorld(dt, info.alpha);
     this.traffic.update(frameDt);
+    this.updateRace(frameDt);
     this.updateLampLights(frameDt);
     this.handleActions();
 
@@ -185,19 +200,23 @@ class Game {
     this.engine.render();
 
     this.elapsed += frameDt;
-    if (this.mode === 'drive') this.raceTimeMs += frameDt * 1000;
+    if (this.mode !== 'menu') this.raceTimeMs += frameDt * 1000;
 
-    if (this.mode === 'drive') {
+    if (this.mode !== 'menu') {
+      const race = this.race;
       this.hud.update({
         speedKmh: this.dynamics.speedKmh,
         gear: this.dynamics.state.gear,
         rpmRatio: this.dynamics.rpmRatio,
-        position: 1,
-        totalRacers: 1,
-        lap: 1,
-        totalLaps: 1,
-        timeMs: this.raceTimeMs,
-        mode: 'freeRoam',
+        position: race ? race.playerPosition : 1,
+        totalRacers: race ? race.racers.length : 1,
+        lap: race ? Math.min(race.lap, race.options.laps) : 1,
+        totalLaps: race ? race.options.laps : 1,
+        timeMs: race ? race.elapsedMs : this.raceTimeMs,
+        bestLapMs: race?.bestLapMs,
+        route: race ? race.layout.path.map(([x, z]) => ({ x, z })) : undefined,
+        racers: race ? race.racers.map((r) => ({ x: r.x, z: r.z, isPlayer: r.isPlayer })) : undefined,
+        mode: this.mode === 'race' ? 'race' : 'freeRoam',
         coins: this.save.data.coins,
         kills: this.save.data.stats.pedestrianKills,
         cameraMode: this.rig.mode,
@@ -281,10 +300,14 @@ class Game {
       this.hud.toast('车辆已重置', 'info');
     }
     if (this.input.consume('back')) {
-      this.mode = 'menu';
-      this.menu?.show();
-      this.hud.setVisible(false);
-      this.menuAngle = 0.6;
+      if (this.mode === 'race') {
+        this.exitRace();
+      } else {
+        this.mode = 'menu';
+        this.menu?.show();
+        this.hud.setVisible(false);
+        this.menuAngle = 0.6;
+      }
     }
   }
 
@@ -294,6 +317,102 @@ class Game {
     this.hud.setVisible(true);
     this.rig.snap();
     this.hud.toast('WASD 驾驶 · 空格漂移 · C 视角', 'info');
+  }
+
+  /** 打开竞速设置（不切场景，菜单背景仍可看见城市） */
+  private openRaceSetup(): void {
+    this.raceUi.showSetup(
+      (setup) => this.startRace(setup),
+      () => this.menu?.show(),
+    );
+  }
+
+  private startRace(setup: RaceSetup): void {
+    this.lastSetup = setup;
+    const layout = setup.layout;
+    this.mode = 'race';
+    this.menu?.hide();
+    this.hud.setVisible(true);
+    this.raceUi.hideResults();
+
+    const [startX, startZ] = layout.path[0];
+    const [nextX, nextZ] = layout.path[1];
+    const heading = Math.atan2(nextX - startX, nextZ - startZ);
+    this.dynamics.reset(startX, startZ, heading);
+    this.rig.snap();
+    this.traffic.setVisible(false);
+
+    this.disposeAiRacers();
+    this.race = new RaceManager(layout, {
+      laps: setup.laps,
+      opponents: setup.opponents,
+      difficulty: setup.difficulty,
+    });
+    this.race.onFinish = (result) => this.finishRace(result);
+    this.aiRacers = new AiRacers(this.scene, setup.opponents);
+    this.race.start(heading);
+    this.raceUi.showCountdown(3);
+    this.hud.toast(`${layout.name} · ${setup.laps} 圈 · ${setup.opponents + 1} 台车`, 'info');
+  }
+
+  private updateRace(frameDt: number): void {
+    const race = this.race;
+    if (!race) return;
+    const s = this.dynamics.state;
+    race.update(frameDt, s.x, s.z, s.heading);
+    if (race.phase === 'countdown') {
+      this.raceUi.showCountdown(race.countdown);
+    } else {
+      this.raceUi.hideCountdown();
+    }
+    this.aiRacers?.sync(race.racers.slice(1));
+  }
+
+  private finishRace(result: RaceResult): void {
+    const reward = [300, 200, 150][result.position - 1] ?? 100;
+    const key = `${result.layoutName}:${result.difficulty}`;
+    const previous = this.save.data.bestLaps[key] ?? 0;
+    const isRecord = result.bestLapMs > 0 && (previous === 0 || result.bestLapMs < previous);
+
+    this.save.data.coins += reward;
+    this.save.data.stats.coinsEarned += reward;
+    this.save.data.stats.races += 1;
+    if (result.position === 1) this.save.data.stats.raceWins += 1;
+    if (isRecord) this.save.data.bestLaps[key] = result.bestLapMs;
+    this.save.save();
+    this.menu?.setCoins(this.save.data.coins);
+
+    this.raceUi.showResults(
+      result,
+      reward,
+      isRecord,
+      () => {
+        if (this.lastSetup) this.startRace(this.lastSetup);
+      },
+      () => this.exitRace(),
+    );
+  }
+
+  private exitRace(): void {
+    this.mode = 'menu';
+    this.race = null;
+    this.disposeAiRacers();
+    this.traffic.setVisible(true);
+    this.raceUi.hideCountdown();
+    this.raceUi.hideResults();
+    this.menu?.show();
+    this.hud.setVisible(false);
+    this.dynamics.reset(WORLD.SPAWN_X, WORLD.SPAWN_Z, Math.PI * 0.5);
+    this.rig.snap();
+  }
+
+  private disposeAiRacers(): void {
+    if (!this.aiRacers) return;
+    this.scene.remove(this.aiRacers.group);
+    this.aiRacers.group.traverse((child) => {
+      if (child instanceof THREE.Mesh) child.material.dispose();
+    });
+    this.aiRacers = null;
   }
 
   /** 车灯 + 路灯点光池（固定数量，运行时只搬位置） */

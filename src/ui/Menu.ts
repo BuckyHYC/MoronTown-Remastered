@@ -8,6 +8,7 @@ import {
 
 export interface MenuHandlers {
   onStart(): void;
+  onRace(): void;
   onTime(id: TimeId): void;
   onQuality(tier: QualityTier): void;
   onPaint(color: string): void;
@@ -45,6 +46,7 @@ export class Menu {
         <div class="menu-actions">
           <button class="btn-primary" data-act="start"><span>开始驾驶</span><kbd>Enter</kbd></button>
           <div class="menu-links">
+            <button data-act="race">竞速</button>
             <button data-act="garage">车库</button>
             <button data-act="profile">生涯</button>
             <button data-act="settings">设置</button>
@@ -81,6 +83,7 @@ export class Menu {
       btn.addEventListener('click', () => {
         const act = btn.dataset.act;
         if (act === 'start') this.handlers.onStart();
+        else if (act === 'race') this.handlers.onRace();
         else if (act === 'garage') this.handlers.onPlaceholder('车库');
         else if (act === 'profile') this.handlers.onPlaceholder('生涯');
         else if (act === 'settings') this.handlers.onPlaceholder('设置');

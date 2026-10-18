@@ -13,6 +13,9 @@ export interface HudData {
   coins: number;
   kills: number;
   cameraMode: string;
+  bestLapMs?: number;
+  route?: { x: number; z: number }[];
+  racers?: { x: number; z: number; isPlayer: boolean }[];
   timeOfDay: string;
   fps: number;
 }
@@ -50,6 +53,7 @@ export class Hud {
       <div class="hud-top">
         <div class="lap-block"><span data-lap>01</span><i>/</i><span data-laps>01</span></div>
         <div class="time-block" data-time>00:00.000</div>
+        <div class="time-best" data-best>最佳 --:--.---</div>
       </div>
       <div class="hud-map">
         <div class="map-head"><span>城市环路</span><span data-map-mode>FREE</span></div>
@@ -117,6 +121,10 @@ export class Hud {
     this.coinsEl.textContent = `◈ ${data.coins}`;
     this.killsEl.textContent = `撞击 ${data.kills}`;
     this.cameraEl.textContent = data.cameraMode;
+    const best = this.root.querySelector('[data-best]');
+    if (best) {
+      best.textContent = data.bestLapMs ? `最佳 ${formatTime(data.bestLapMs)}` : '最佳 --:--.---';
+    }
     const tod = this.root.querySelector('[data-tod]');
     if (tod) tod.textContent = data.timeOfDay;
     const mode = this.root.querySelector('[data-map-mode]');
@@ -162,6 +170,26 @@ export class Hud {
       ctx.moveTo(pad, p);
       ctx.lineTo(size - pad, p);
       ctx.stroke();
+    }
+
+    if (data.route && data.route.length > 1) {
+      ctx.strokeStyle = 'rgba(69, 200, 255, 0.85)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      data.route.forEach((p, i) => {
+        const x = pad + (p.x / span) * (size - pad * 2);
+        const y = pad + (p.z / span) * (size - pad * 2);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+    for (const racer of data.racers ?? []) {
+      if (racer.isPlayer) continue;
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.beginPath();
+      ctx.arc(pad + (racer.x / span) * (size - pad * 2), pad + (racer.z / span) * (size - pad * 2), 2.4, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     ctx.fillStyle = '#ff8a2a';

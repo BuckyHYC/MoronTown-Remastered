@@ -1,0 +1,184 @@
+/* ================= 竞速 UI ================= */
+.race-setup,
+.race-results,
+.race-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  z-index: 20;
+}
+
+.race-setup,
+.race-results {
+  background: radial-gradient(120% 80% at 50% 45%, rgba(6, 10, 16, 0.72), rgba(4, 7, 12, 0.92));
+  backdrop-filter: blur(6px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.race-panel,
+.result-card {
+  width: min(560px, 88vw);
+  padding: 24px 26px 22px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(20, 30, 42, 0.9), rgba(6, 10, 16, 0.96));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.race-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.race-head span {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+}
+
+.race-head b {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.race-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.race-row label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.race-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.race-options button,
+.race-ghost,
+.race-go {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(9, 14, 21, 0.7);
+  color: rgba(214, 230, 246, 0.8);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.race-options button:hover,
+.race-ghost:hover {
+  border-color: var(--line-strong);
+  color: #fff;
+}
+
+.race-options button.active {
+  border-color: rgba(255, 138, 42, 0.75);
+  background: rgba(255, 138, 42, 0.16);
+  color: #ffd2a8;
+}
+
+.race-actions,
+.result-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.race-go {
+  min-width: 140px;
+  border: none;
+  background: linear-gradient(96deg, #ff8a2a, #ff5f1f);
+  color: #180d04;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.race-countdown {
+  font-family: var(--mono);
+  font-size: clamp(120px, 18vw, 220px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #fff;
+  text-shadow: 0 12px 60px rgba(255, 138, 42, 0.55);
+  pointer-events: none;
+}
+
+.race-countdown[data-state='go'] {
+  color: var(--good);
+  text-shadow: 0 12px 60px rgba(87, 224, 138, 0.5);
+}
+
+.result-kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+}
+
+.result-rank {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-family: var(--mono);
+}
+
+.result-rank b {
+  font-size: 72px;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+
+.result-rank span {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.result-medal {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(150, 190, 230, 0.16);
+}
+
+.result-grid div {
+  display: grid;
+  gap: 4px;
+}
+
+.result-grid span {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+}
+
+.result-grid b {
+  font-family: var(--mono);
+  font-size: 18px;
+}

@@ -23,7 +23,7 @@ function box(w: number, h: number, d: number, x: number, y: number, z: number): 
 }
 
 /** 交通车：车身 + 座舱合并为一个几何体，轮子单独一份（沿用同一实例矩阵） */
-function carBodies(): THREE.BufferGeometry {
+export function carBodies(): THREE.BufferGeometry {
   return mergeGeometries(
     [
       box(1.82, 0.62, 4.24, 0, 0.66, 0),
@@ -35,7 +35,7 @@ function carBodies(): THREE.BufferGeometry {
   )!;
 }
 
-function carWheels(): THREE.BufferGeometry {
+export function carWheels(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
   const wheel = (x: number, z: number): THREE.BufferGeometry => {
     const g = new THREE.CylinderGeometry(0.34, 0.34, 0.24, 10);

@@ -410,3 +410,10 @@ canvas {
     display: none;
   }
 }
+
+.time-best {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}

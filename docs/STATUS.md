@@ -54,3 +54,13 @@
 - 交通流（`src/gameplay/Traffic.ts`）：48 台车、双向四车道、循环回绕，两个 InstancedMesh 绘制，玩家碰撞按圆-圆推离。
 - 渲染/光照微调：日间太阳 3.1 / 半球光 0.9、阴影半径 2.5，夜间泛光阈值 1.15 防过曝；菜单相机固定到受光侧。
 - 截图：`docs/screenshots/menu-day.png`、`menu-night.png`、`drive-night.png`、`city-aerial.png`。
+
+## Round 2 新增（M6 竞速闭环）
+
+- `src/race/Layouts.ts`：三条赛道（城市环路 / 城市巡回 / 山地纵贯），路线贴合路网车道中心，按 6m 采样并生成 8 个顺序检查点。
+- `src/gameplay/RaceManager.ts`：倒计时 3s → 计时 → 检查点顺序判定 → 圈数/最佳圈 → AI 沿路线行驶（前视 + 橡皮筋）→ 排名 → 结算。
+- `src/gameplay/AiRacers.ts`：轻量 AI 车（交通车几何，独立配色），每台一个 Group。
+- `src/ui/RaceUi.ts`：竞速设置（赛道/圈数/对手/难度）、倒计时大字、结算面板（名次/总用时/最佳圈/奖励/再来一局）。
+- HUD：新增最佳圈显示、小地图绘制赛道轮廓 + 对手点，竞速时名次/圈数/计时接入真实数据。
+- 经济：结算奖励 300/200/150（其余 100）落库，更新 races / raceWins / bestLaps。
+- 截图：`docs/screenshots/race-setup.png`、`race-countdown.png`、`race-driving.png`、`race-result.png`。
