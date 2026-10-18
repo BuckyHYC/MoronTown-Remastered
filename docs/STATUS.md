@@ -72,3 +72,12 @@
 - `src/ui/Pause.ts`：暂停菜单（继续 / 重新开始 / 返回菜单 / 四时段切换 / 声音开关），暂停时物理与计时冻结、音频挂起。
 - 主菜单接上「车库」入口；`Esc` 在驾驶/竞速中打开暂停；音频在首次点击开始后初始化。
 - 截图：`docs/screenshots/garage.png`、`pause.png`。
+
+## Round 4 新增（M5 行人 + M7 生涯）
+
+- `src/gameplay/Pedestrians.ts`：72 名行人在人行道循环行走（单个 InstancedMesh + 逐实例配色），被撞倒地 4 秒复活；撞击 +5 金币并累加击杀。
+- `src/meta/Progress.ts`：14 个成就定义、每日三任务（日期哈希确定性）、签到连续天数与 `min(300, n×50)` 奖励、成就进度纯函数。
+- `src/ui/Career.ts`：生涯屏（签到 / 每日任务 / 生涯统计 / 成就墙），领取后即时刷新并结算金币。
+- 主循环统计：里程按 0.1km 落盘、每 km 折算 2 金币；极速纪录、行驶时长、累计赚取实时累计；成就自动解锁发奖。
+- 截图：`docs/screenshots/career.png`、`drive-peds.png`。
+- 验证：生涯屏正常渲染；瞬移到行人位置后 `pedestrianKills=1`、`coins=5`。

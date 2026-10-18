@@ -20,6 +20,9 @@ import { RaceUi, type RaceSetup } from './ui/RaceUi';
 import { Garage } from './ui/Garage';
 import { Pause } from './ui/Pause';
 import { AudioSystem } from './audio/AudioSystem';
+import { Pedestrians } from './gameplay/Pedestrians';
+import { Career } from './ui/Career';
+import { achievementProgress, dailyQuests, checkInReady, nextCheckIn } from './meta/Progress';
 import './styles/screens.css';
 import { Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
@@ -49,6 +52,10 @@ class Game {
   readonly raceUi: RaceUi;
   readonly audio: AudioSystem;
   readonly garage: Garage;
+  readonly career: Career;
+  readonly peds: Pedestrians;
+  private pendingKm = 0;
+  private saveTimer = 0;
   readonly pause: Pause;
   private paused = false;
   private race: RaceManager | null = null;
@@ -123,6 +130,12 @@ class Game {
         onClose: () => this.menu?.show(),
       },
     );
+    this.career = new Career(ui, {
+      onClaimCheckIn: () => this.claimCheckIn(),
+      onClaimQuest: (id) => this.claimQuest(id),
+      onClose: () => this.menu?.show(),
+    });
+    this.peds = new Pedestrians(this.scene, 4, 72);
     this.pause = new Pause(ui, {
       onResume: () => this.setPaused(false),
       onRestart: () => this.restartMode(),
@@ -155,6 +168,7 @@ class Game {
       onStart: () => this.startDrive(),
       onRace: () => this.openRaceSetup(),
       onGarage: () => this.openGarage(),
+      onCareer: () => this.openCareer(),
       onTime: (id: TimeId) => {
         this.setTime(id, true);
         this.menu?.setActiveTime(id);
@@ -231,6 +245,7 @@ class Game {
     this.updateWorld(dt, info.alpha);
     this.traffic.update(frameDt);
     this.updateRace(frameDt);
+    if (!this.paused) this.peds.update(frameDt, this.elapsed);
     if (!this.paused) {
       this.audio.update(
         this.dynamics.state.speed,
@@ -249,6 +264,7 @@ class Game {
     this.reflector?.update(this.engine.renderer, this.scene, this.camera, this.elapsed);
     this.engine.render();
 
+    this.trackProgress(frameDt);
     this.elapsed += frameDt;
     if (this.mode !== 'menu') this.raceTimeMs += frameDt * 1000;
 
@@ -372,6 +388,85 @@ class Game {
     this.hud.setVisible(true);
     this.rig.snap();
     this.hud.toast('WASD 驾驶 · 空格漂移 · C 视角', 'info');
+  }
+
+  /** 生涯屏 */
+  private openCareer(): void {
+    this.checkAchievements();
+    this.menu?.hide();
+    this.career.show(this.save.data);
+  }
+
+  private claimCheckIn(): void {
+    if (!checkInReady(this.save.data)) return;
+    const next = nextCheckIn(this.save.data);
+    this.save.data.daily.checkInDate = new Date().toISOString().slice(0, 10);
+    this.save.data.daily.checkInStreak = next.streak;
+    this.save.data.coins += next.reward;
+    this.save.data.stats.coinsEarned += next.reward;
+    this.save.save();
+    this.menu?.setCoins(this.save.data.coins);
+    this.audio.playClick();
+    this.checkAchievements();
+    this.career.show(this.save.data);
+    this.hud.toast(`签到成功 +◈${next.reward}`, 'good');
+  }
+
+  private claimQuest(id: string): void {
+    const quest = dailyQuests(this.save.data).find((q) => q.id === id);
+    if (!quest || !quest.done || quest.claimed) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if (this.save.data.daily.date !== today) {
+      this.save.data.daily.date = today;
+      this.save.data.daily.done = [];
+    }
+    this.save.data.daily.done.push(id);
+    this.save.data.coins += quest.reward;
+    this.save.data.stats.coinsEarned += quest.reward;
+    this.save.save();
+    this.menu?.setCoins(this.save.data.coins);
+    this.audio.playClick();
+    this.career.show(this.save.data);
+    this.hud.toast(`任务完成 +◈${quest.reward}`, 'good');
+  }
+
+  /** 成就自动解锁并发放奖励 */
+  private checkAchievements(): void {
+    for (const item of achievementProgress(this.save.data)) {
+      if (!item.unlocked || this.save.data.achievements.includes(item.def.id)) continue;
+      this.save.data.achievements.push(item.def.id);
+      this.save.data.coins += item.def.reward;
+      this.save.data.stats.coinsEarned += item.def.reward;
+      this.hud.toast(`成就解锁：${item.def.name} +◈${item.def.reward}`, 'good');
+    }
+    this.save.save();
+    this.menu?.setCoins(this.save.data.coins);
+  }
+
+  /** 里程 / 极速 / 步行统计（每 0.1km 落盘一次） */
+  private trackProgress(frameDt: number): void {
+    if (this.mode === 'menu' || this.paused) return;
+    const s = this.dynamics.state;
+    const kmh = Math.abs(s.speed) * 3.6;
+    if (kmh > this.save.data.stats.topSpeedKmh) this.save.data.stats.topSpeedKmh = kmh;
+    this.save.data.stats.playSeconds += frameDt;
+    this.pendingKm += (Math.abs(s.speed) * frameDt) / 1000;
+    if (this.pendingKm >= 0.1) {
+      const km = this.pendingKm;
+      this.pendingKm = 0;
+      this.save.data.stats.distanceKm += km;
+      const coins = Math.floor(km * 2);
+      if (coins > 0) {
+        this.save.data.coins += coins;
+        this.save.data.stats.coinsEarned += coins;
+      }
+      this.save.save();
+    }
+    this.saveTimer += frameDt;
+    if (this.saveTimer > 10) {
+      this.saveTimer = 0;
+      this.save.save();
+    }
   }
 
   /** 打开车库（菜单背景保留，车辆在场景里可继续被环绕展示） */
@@ -618,6 +713,16 @@ class Game {
     const bound = this.world.span + 30;
     s.x = Math.max(-30, Math.min(bound, s.x));
     s.z = Math.max(-30, Math.min(bound, s.z));
+
+    // 行人撞击：倒地 4 秒 + 金币
+    const hits = this.peds.checkHits(s.x, s.z, radius, this.elapsed);
+    if (hits > 0) {
+      this.save.data.stats.pedestrianKills += hits;
+      this.save.data.coins += hits * 5;
+      this.save.data.stats.coinsEarned += hits * 5;
+      this.save.save();
+      this.rig.addShake(0.25);
+    }
 
     // 与交通车辆的圆-圆推离
     for (const car of this.traffic.colliders()) {

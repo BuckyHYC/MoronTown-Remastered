@@ -157,3 +157,165 @@
 .pause-actions .race-go {
   height: 42px;
 }
+
+/* ================= 生涯 ================= */
+.career {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  z-index: 23;
+  background: radial-gradient(120% 80% at 50% 45%, rgba(6, 10, 16, 0.55), rgba(4, 7, 12, 0.93));
+  backdrop-filter: blur(6px);
+}
+
+.career-panel {
+  width: min(980px, 94vw);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(20, 30, 42, 0.92), rgba(6, 10, 16, 0.97));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.career-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.career-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(10, 16, 24, 0.6);
+  border: 1px solid var(--line);
+}
+
+.career-card h4 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.career-big {
+  font-family: var(--mono);
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.career-big span {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.quest {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.quest-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.quest-top span {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.quest-desc {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.quest .bar {
+  height: 4px;
+  border-radius: 3px;
+  background: rgba(150, 190, 230, 0.14);
+  overflow: hidden;
+}
+
+.quest .bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ff8a2a, #ffd08a);
+}
+
+.career-kv {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 18px;
+}
+
+.career-kv div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(150, 190, 230, 0.12);
+}
+
+.career-kv span {
+  color: var(--muted);
+}
+
+.career-kv b {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.ach-list {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.ach {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  opacity: 0.55;
+}
+
+.ach.done {
+  opacity: 1;
+}
+
+.ach-icon {
+  font-size: 18px;
+}
+
+.ach-body {
+  display: grid;
+}
+
+.ach-body b {
+  font-size: 12.5px;
+}
+
+.ach-body span {
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+.ach-reward {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--accent);
+}
+
+.career-achievements {
+  grid-column: 1 / -1;
+}

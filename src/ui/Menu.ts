@@ -10,6 +10,7 @@ export interface MenuHandlers {
   onStart(): void;
   onRace(): void;
   onGarage(): void;
+  onCareer(): void;
   onTime(id: TimeId): void;
   onQuality(tier: QualityTier): void;
   onPaint(color: string): void;
@@ -86,7 +87,7 @@ export class Menu {
         if (act === 'start') this.handlers.onStart();
         else if (act === 'race') this.handlers.onRace();
         else if (act === 'garage') this.handlers.onGarage();
-        else if (act === 'profile') this.handlers.onPlaceholder('生涯');
+        else if (act === 'profile') this.handlers.onCareer();
         else if (act === 'settings') this.handlers.onPlaceholder('设置');
         else if (act === 'multiplayer') this.handlers.onPlaceholder('联机');
       });
