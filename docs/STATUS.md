@@ -207,3 +207,14 @@
 - 城市规模对齐计划书：CityWorld blocks 4 → `WORLD.GRID_SIZE`(8)，城市从 600×600 扩到 1200×1200，建筑 124 → 511、路灯 65 → 225；小地图跨度同步。low 档 swiftShader：153 drawcall / 371k 三角 / 4fps（原 7fps），全套 e2e 仍 2.0 分钟跑完。
 - 新增 e2e：taskpoints（进入圆环 → 设置面板可见 + 预选「城市巡回」）、touch（油门 2.6s 后速度 >15km/h、摇杆右推 steer>0.5）。
 - 回归：vitest 9 条 + e2e 12 条全绿（2.0m），build 通过。
+
+## Round 28：独显性能实测（RTX 5070 达标）
+
+- Chrome 加 `--force_high_performance_gpu` 后不再回落 Intel UHD，探针终于测到真实独显：`ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Laptop GPU … D3D11)`。
+- 1920×1080、行驶状态（按住 W 10s 采样）：
+  - high：平均 **160.5 fps**、1% low **82 fps**、281 drawcall、606k 三角；
+  - medium：平均 145.8 / 1% low 54.6；
+  - ultra：平均 157.8 / 1% low 54.9（无头 dpr=1，pixelRatio 被设备像素比夹到 1）；
+  - high + 夜间 + 下雨：平均 161.1 / 1% low 81.3。
+- 结论：高档 1080p 远超 60fps 目标；low 档继续供无头 CI（SwiftShader 153 drawcall / 371k 三角）。
+- `tools/perf-probe.mjs` 增加第 4 个参数（附加 query，如 `"&time=night&rain=1"`）与行驶采样。

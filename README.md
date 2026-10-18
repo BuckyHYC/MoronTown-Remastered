@@ -26,7 +26,7 @@
 | 暂停菜单（继续 / 重开 / 返回 / 时段 / 天气 / 静音） | ✅ |
 | 无尽模式（区块流式） | ⏳ |
 | 联机（P2） | ⏳ |
-| RTX 5070 1080p high 60fps 实测 | ⏳ 待验证（Chrome 固定走 Intel UHD） |
+| RTX 5070 Laptop 1080p 高档实测（行驶状态，非 SwiftShader） | ✅ 平均 160.5 fps / 1% low 82 fps（281 drawcall / 606k 三角） |
 
 ## 运行
 
@@ -36,7 +36,7 @@ npm run dev          # http://localhost:5174
 npm run build        # tsc --noEmit && vite build
 npm test             # vitest（9 条）
 npx playwright test  # e2e（12 条）
-node tools/perf-probe.mjs high 8   # 真实 GPU 性能探针
+node tools/perf-probe.mjs high 10  # 真实 GPU 性能探针（需 --force_high_performance_gpu 才走独显）
 ```
 
 调试入口：`?quality=low|medium|high|ultra`、`?time=dawn|day|dusk|night`、`?rain=1`、`?touch=1`、`?autostart=1`；
@@ -71,5 +71,6 @@ docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 - [docs/ART-BIBLE.md](docs/ART-BIBLE.md)：画质目标、色板、材质与 HUD 栅格
 - [docs/ASSETS.md](docs/ASSETS.md)：资产清单、许可与优化流程
 - [docs/STATUS.md](docs/STATUS.md)：里程碑进度、实测数据、已知缺口
+
 
 

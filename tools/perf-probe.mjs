@@ -6,18 +6,21 @@ import { chromium } from '@playwright/test';
 
 const quality = process.argv[2] ?? 'high';
 const seconds = Number(process.argv[3] ?? 10);
-const url = `http://localhost:5174/?quality=${quality}&autostart=1`;
+const extra = process.argv[4] ?? '';
+const url = `http://localhost:5174/?quality=${quality}&autostart=1${extra}`;
 
 const browser = await chromium.launch({
   channel: 'chrome',
   headless: true,
-  args: ['--enable-gpu', '--use-angle=d3d11', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
+  args: ['--enable-gpu', '--use-angle=d3d11', '--force_high_performance_gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
 });
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 page.on('pageerror', (e) => console.log('[pageerror]', e.message));
 await page.goto(url, { waitUntil: 'load', timeout: 60000 });
 await page.waitForFunction(() => !!window.__RE__, { timeout: 60000 });
 await page.waitForTimeout(2500);
+// 行驶状态下测量（油门按住，含运动模糊/反射/车流）
+await page.keyboard.down('KeyW');
 
 const result = await page.evaluate(async ({ duration, quality }) => {
   const game = window.__RE__.game;
@@ -58,5 +61,9 @@ const result = await page.evaluate(async ({ duration, quality }) => {
   };
 }, { duration: seconds, quality });
 
+await page.keyboard.up('KeyW');
 console.log(JSON.stringify(result, null, 2));
 await browser.close();
+
+
+
