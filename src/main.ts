@@ -15,10 +15,13 @@ import { CameraRig } from './gameplay/CameraRig';
 import { InputSystem } from './gameplay/Input';
 import { Traffic } from './gameplay/Traffic';
 import { AiRacers } from './gameplay/AiRacers';
+import { TaskPoints } from './gameplay/TaskPoints';
 import { RaceManager, type RaceResult } from './gameplay/RaceManager';
+import { RACE_LAYOUTS } from './race/Layouts';
 import { RaceUi, type RaceSetup } from './ui/RaceUi';
 import { Garage } from './ui/Garage';
 import { Pause } from './ui/Pause';
+import { TouchControls, isTouchDevice } from './ui/TouchControls';
 import { AudioSystem } from './audio/AudioSystem';
 import { Pedestrians } from './gameplay/Pedestrians';
 import { GroundFx } from './fx/GroundFx';
@@ -56,6 +59,7 @@ class Game {
   readonly garage: Garage;
   readonly career: Career;
   readonly peds: Pedestrians;
+  readonly tasks: TaskPoints;
   readonly fx: GroundFx;
   readonly rain: RainSystem | null = null;
   private rainOn = false;
@@ -67,6 +71,7 @@ class Game {
   private renderScale = 1;
   private adaptiveEnabled = true;
   readonly pause: Pause;
+  readonly touch: TouchControls | null = null;
   private paused = false;
   private race: RaceManager | null = null;
   private aiRacers: AiRacers | null = null;
@@ -147,6 +152,12 @@ class Game {
       onClose: () => this.menu?.show(),
     });
     this.peds = new Pedestrians(this.scene, 4, 72);
+    this.tasks = new TaskPoints([
+      { x: 300, z: 300, layoutIndex: 0, label: '城市环路' },
+      { x: 750, z: 450, layoutIndex: 1, label: '城市巡回' },
+      { x: 1050, z: 750, layoutIndex: 2, label: '山地纵贯' },
+    ]);
+    this.scene.add(this.tasks.group);
     this.fx = new GroundFx(this.scene, this.engine.quality.particleBudget);
     this.scene.add(this.fx.group);
     if (this.engine.quality.particleBudget > 0) {
@@ -167,6 +178,18 @@ class Game {
       },
       onRain: (on) => this.toggleRain(on),
     });
+    if (isTouchDevice()) {
+      this.touch = new TouchControls(
+        ui,
+        { onCamera: () => this.cycleCamera() },
+        (steer, throttle, brake, handbrake) => {
+          this.input.setTouch(steer, throttle, brake, handbrake);
+          if (!steer && !throttle && !brake && !handbrake) this.input.clearTouch();
+        },
+        () => this.input.clearTouch(),
+      );
+      this.touch.setVisible(false);
+    }
     this.clock = new GameClock(PHYSICS.FIXED_STEP);
     this.input.attach(this.engine.canvas);
 
@@ -262,6 +285,15 @@ class Game {
     return this.wheelWorld;
   }
 
+  /** 切换视角（键盘 C / 触屏「视角」按钮共用） */
+  private cycleCamera(): void {
+    const mode = this.rig.cycle();
+    this.hud.toast(
+      mode === 'chase' ? '追尾视角' : mode === 'hood' ? '引擎盖视角' : '座舱视角',
+      'info',
+    );
+  }
+
   /** 天气开关：下雨同时提高路面湿度（反射更强、颜色更深） */
   toggleRain(force?: boolean): void {
     if (!this.rain) {
@@ -311,6 +343,13 @@ class Game {
       });
     }
     this.rain?.update(this.camera, frameDt);
+    if (this.mode === 'drive' && !this.paused && !this.raceUi.setupVisible) {
+      const entered = this.tasks.update(frameDt, this.elapsed, this.dynamics.state.x, this.dynamics.state.z);
+      if (entered !== null) {
+        this.hud.toast(`进入 ${RACE_LAYOUTS[entered]?.name ?? '赛道'} 竞速点`, 'good');
+        this.openRaceSetup(entered);
+      }
+    }
     this.traffic.update(frameDt);
     this.updateRace(frameDt);
     if (!this.paused) this.peds.update(frameDt, this.elapsed);
@@ -325,6 +364,10 @@ class Game {
     }
     this.updateLampLights(frameDt);
     this.handleActions();
+    if (this.touch) {
+      const showTouch = this.mode !== 'menu' && !this.paused;
+      if (this.touch.active !== showTouch) this.touch.setVisible(showTouch);
+    }
 
     const speedRatio = this.dynamics.speedRatio;
     this.engine.setSpeed(speedRatio, this.elapsed);
@@ -440,13 +483,7 @@ class Game {
       this.setPaused(!this.paused);
       return;
     }
-    if (this.input.consume('camera')) {
-      const mode = this.rig.cycle();
-      this.hud.toast(
-        mode === 'chase' ? '追尾视角' : mode === 'hood' ? '引擎盖视角' : '座舱视角',
-        'info',
-      );
-    }
+    if (this.input.consume('camera')) this.cycleCamera();
     if (this.input.consume('time')) this.cycleTime();
     if (this.input.consume('weather')) this.toggleRain();
     if (this.input.consume('mute')) {
@@ -478,6 +515,7 @@ class Game {
     this.mode = 'drive';
     this.menu?.hide();
     this.hud.setVisible(true);
+    this.tasks.setVisible(true);
     this.rig.snap();
     this.hud.toast('WASD 驾驶 · 空格漂移 · C 视角', 'info');
   }
@@ -641,6 +679,7 @@ class Game {
     this.race = null;
     this.disposeAiRacers();
     this.traffic.setVisible(true);
+    this.tasks.setVisible(false);
     this.raceUi.hideCountdown();
     this.raceUi.hideResults();
     this.garage.hide();
@@ -651,10 +690,11 @@ class Game {
   }
 
   /** 打开竞速设置（不切场景，菜单背景仍可看见城市） */
-  private openRaceSetup(): void {
+  private openRaceSetup(presetLayout?: number): void {
     this.raceUi.showSetup(
       (setup) => this.startRace(setup),
       () => this.menu?.show(),
+      presetLayout,
     );
   }
 
@@ -666,6 +706,7 @@ class Game {
     this.menu?.hide();
     this.hud.setVisible(true);
     this.raceUi.hideResults();
+    this.tasks.setVisible(false);
 
     const [startX, startZ] = layout.path[0];
     const [nextX, nextZ] = layout.path[1];
@@ -734,6 +775,7 @@ class Game {
     this.race = null;
     this.disposeAiRacers();
     this.traffic.setVisible(true);
+    this.tasks.setVisible(false);
     this.raceUi.hideCountdown();
     this.raceUi.hideResults();
     this.menu?.show();
@@ -885,6 +927,7 @@ class Game {
       weather: { rain: this.rainOn, drops: this.rain?.active ? this.rain.dropCount : 0 },
       fx: { skid: this.fx.skidSegments, smoke: this.fx.smokeAlive },
       cockpit: this.vehicle.cockpitHidden,
+      touch: this.touch?.active ?? false,
     };
   }
 
@@ -908,6 +951,7 @@ class Game {
         }),
       setTime: (id: TimeId) => this.setTime(id, true),
       setRain: (on: boolean) => this.toggleRain(on),
+      tasks: () => this.tasks.positions,
       /** 调试：调整座舱眼点并立即切到座舱视角 */
       eye: (x: number, y: number, z: number) => {
         this.rig.cockpitEye.set(x, y, z);
@@ -960,3 +1004,4 @@ async function main(): Promise<void> {
 }
 
 void main();
+

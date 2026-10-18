@@ -26,7 +26,7 @@ export class CityWorld {
 
   constructor(
     private readonly mats = MATERIALS,
-    private readonly blocks: number = 4,
+    private readonly blocks: number = WORLD.GRID_SIZE,
   ) {
     this.group.name = 'city';
   }
@@ -501,3 +501,4 @@ function flatPlane(w: number, d: number, x: number, z: number, y: number): THREE
   geometry.translate(x, y, z);
   return geometry;
 }
+

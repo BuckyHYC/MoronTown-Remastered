@@ -169,7 +169,7 @@ export class Hud {
     ctx.fillRect(0, 0, size, size);
 
     const pad = 12;
-    const span = WORLD.BLOCK_LENGTH * 4;
+    const span = WORLD.BLOCK_LENGTH * WORLD.GRID_SIZE;
     const toX = (worldX: number): number => pad + (worldX / span) * (size - pad * 2);
     const toY = (worldZ: number): number => pad + (worldZ / span) * (size - pad * 2);
 
@@ -232,3 +232,4 @@ export function formatTime(ms: number): string {
 }
 
 export const HUD_RING_LENGTH = RING_LENGTH;
+

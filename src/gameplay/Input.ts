@@ -11,6 +11,7 @@ export class InputSystem {
   private readonly keys = new Set<string>();
   private readonly pending = new Set<ActionId>();
   private orbitDelta = 0;
+  private touch: { steer: number; throttle: number; brake: number; handbrake: boolean } | null = null;
   private dragging = false;
   private lastPointerX = 0;
   private detach: (() => void)[] = [];
@@ -87,13 +88,27 @@ export class InputSystem {
     this.state.brake = back ? 1 : 0;
     this.state.steer = (right ? 1 : 0) - (left ? 1 : 0);
     this.state.handbrake = k.has('Space');
+    // 触屏有输入时优先，松手后回落到键盘
+    if (this.touch) {
+      this.state.steer = this.touch.steer;
+      this.state.throttle = this.touch.throttle;
+      this.state.brake = this.touch.brake;
+      this.state.handbrake = this.touch.handbrake;
+    }
   }
 
   setTouch(steer: number, throttle: number, brake: number, handbrake: boolean): void {
+    this.touch = { steer, throttle, brake, handbrake };
     this.state.steer = steer;
     this.state.throttle = throttle;
     this.state.brake = brake;
     this.state.handbrake = handbrake;
+  }
+
+  /** 触屏松手后交还键盘控制 */
+  clearTouch(): void {
+    this.touch = null;
+    this.syncKeys();
   }
 
   consume(action: ActionId): boolean {

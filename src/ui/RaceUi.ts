@@ -130,9 +130,13 @@ export class RaceUi {
     mark('[data-difficulty]', this.difficulty);
   }
 
-  showSetup(start: (setup: RaceSetup) => void, exit: () => void): void {
+  showSetup(start: (setup: RaceSetup) => void, exit: () => void, presetLayout?: number): void {
     this.onStart = start;
     this.onExit = exit;
+    if (presetLayout !== undefined && RACE_LAYOUTS[presetLayout]) {
+      this.layoutIndex = presetLayout;
+      this.refresh();
+    }
     this.setup.classList.remove('hidden');
   }
 

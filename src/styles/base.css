@@ -451,3 +451,131 @@ canvas {
   letter-spacing: 0.12em;
   color: var(--dim);
 }
+
+/* ================= 触屏操作 ================= */
+.touch-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.touch-ui.hidden {
+  opacity: 0;
+  pointer-events: none !important;
+}
+
+.touch-stick {
+  position: absolute;
+  left: 26px;
+  bottom: 34px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, rgba(12, 20, 30, 0.42), rgba(8, 14, 22, 0.22));
+  border: 1px solid rgba(140, 200, 255, 0.28);
+  pointer-events: auto;
+  touch-action: none;
+  backdrop-filter: blur(6px);
+}
+
+.touch-stick-ring {
+  position: absolute;
+  inset: 18px;
+  border-radius: 50%;
+  border: 1px dashed rgba(140, 200, 255, 0.18);
+}
+
+.touch-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, rgba(220, 240, 255, 0.92), rgba(96, 168, 226, 0.55));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.touch-side {
+  position: absolute;
+  right: 26px;
+  bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.touch-pedals {
+  display: flex;
+  gap: 12px;
+}
+
+.touch-btn {
+  pointer-events: auto;
+  touch-action: none;
+  border: 1px solid rgba(150, 205, 255, 0.32);
+  background: rgba(10, 18, 28, 0.55);
+  color: #dfeaf6;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  border-radius: 14px;
+  padding: 0;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: transform 0.08s ease, background 0.12s ease;
+}
+
+.touch-btn:active {
+  transform: scale(0.96);
+  background: rgba(60, 140, 210, 0.5);
+}
+
+.touch-gas,
+.touch-brake {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  font-size: 14px;
+}
+
+.touch-gas {
+  background: rgba(24, 78, 56, 0.55);
+  border-color: rgba(90, 220, 160, 0.4);
+}
+
+.touch-brake {
+  background: rgba(84, 26, 32, 0.55);
+  border-color: rgba(255, 120, 120, 0.35);
+}
+
+.touch-drift,
+.touch-cam {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.touch-drift {
+  border-color: rgba(255, 190, 90, 0.42);
+}
+
+@media (max-height: 520px) {
+  .touch-stick {
+    width: 104px;
+    height: 104px;
+    bottom: 18px;
+  }
+  .touch-gas,
+  .touch-brake {
+    width: 74px;
+    height: 74px;
+  }
+}

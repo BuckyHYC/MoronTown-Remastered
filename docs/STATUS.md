@@ -199,3 +199,11 @@
 - 相机平滑改用帧时长（原用固定步长，低帧率下视角切换要 1-2 秒才就位）。
 - 新增 `tests/e2e/cockpit.spec.ts`：切座舱 → 车壳隐藏 → 截图非黑屏 → 回追尾恢复；e2e 合计 10 条。
 - 回归：vitest 9 条 + e2e 10 条全绿；build 通过（964 kB / gzip 280 kB）。
+
+## Round 27：任务点 + 触屏 + 城市扩到计划规模
+
+- 新增 `src/gameplay/TaskPoints.ts`：3 个任务圆环（内环亮 + 外环弱，双层 additive torus，缓慢自转/浮动/呼吸），位置 (300,300)/(750,450)/(1050,750)，半径 9m；开进即打开对应赛道的竞速设置（RaceUi.showSetup 新增 presetLayout 参数），4 秒冷却防重入。
+- 新增 `src/ui/TouchControls.ts` + CSS：左侧虚拟摇杆（pointer capture，横向转向）、右侧油门/刹车圆钮 + 漂移键 + 视角键；InputSystem 改为「触屏有输入时优先，松手回落键盘」。判定用 `(pointer: coarse)`，`?touch=1` 可强制开启（桌面测试用）。
+- 城市规模对齐计划书：CityWorld blocks 4 → `WORLD.GRID_SIZE`(8)，城市从 600×600 扩到 1200×1200，建筑 124 → 511、路灯 65 → 225；小地图跨度同步。low 档 swiftShader：153 drawcall / 371k 三角 / 4fps（原 7fps），全套 e2e 仍 2.0 分钟跑完。
+- 新增 e2e：taskpoints（进入圆环 → 设置面板可见 + 预选「城市巡回」）、touch（油门 2.6s 后速度 >15km/h、摇杆右推 steer>0.5）。
+- 回归：vitest 9 条 + e2e 12 条全绿（2.0m），build 通过。
