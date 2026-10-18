@@ -64,3 +64,11 @@
 - HUD：新增最佳圈显示、小地图绘制赛道轮廓 + 对手点，竞速时名次/圈数/计时接入真实数据。
 - 经济：结算奖励 300/200/150（其余 100）落库，更新 races / raceWins / bestLaps。
 - 截图：`docs/screenshots/race-setup.png`、`race-countdown.png`、`race-driving.png`、`race-result.png`。
+
+## Round 3 新增（M7 元系统 + 音频）
+
+- `src/audio/AudioSystem.ts`：纯合成音频——三层引擎谐波 + 动态低通、风噪、胎噪、换挡 blip、撞击噪声爆、UI 点击；主总线带压缩器，静音/音量接存档。
+- `src/ui/Garage.ts`：车库屏（6 款车列表、属性条、涂装、购买/装备、金币校验），装备后写入存档并切换动力学参数（`Dynamics.setSpec`）。
+- `src/ui/Pause.ts`：暂停菜单（继续 / 重新开始 / 返回菜单 / 四时段切换 / 声音开关），暂停时物理与计时冻结、音频挂起。
+- 主菜单接上「车库」入口；`Esc` 在驾驶/竞速中打开暂停；音频在首次点击开始后初始化。
+- 截图：`docs/screenshots/garage.png`、`pause.png`。

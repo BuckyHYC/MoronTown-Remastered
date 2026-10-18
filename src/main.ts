@@ -17,6 +17,10 @@ import { Traffic } from './gameplay/Traffic';
 import { AiRacers } from './gameplay/AiRacers';
 import { RaceManager, type RaceResult } from './gameplay/RaceManager';
 import { RaceUi, type RaceSetup } from './ui/RaceUi';
+import { Garage } from './ui/Garage';
+import { Pause } from './ui/Pause';
+import { AudioSystem } from './audio/AudioSystem';
+import './styles/screens.css';
 import { Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 import { GameClock } from './core/Clock';
@@ -43,6 +47,10 @@ class Game {
   readonly signage: Signage;
   readonly traffic: Traffic;
   readonly raceUi: RaceUi;
+  readonly audio: AudioSystem;
+  readonly garage: Garage;
+  readonly pause: Pause;
+  private paused = false;
   private race: RaceManager | null = null;
   private aiRacers: AiRacers | null = null;
   private lastSetup: RaceSetup | null = null;
@@ -96,11 +104,43 @@ class Game {
     this.uiRoot = ui;
     this.hud = new Hud(ui);
     this.raceUi = new RaceUi(ui);
+    this.audio = new AudioSystem(
+      this.save.data.audio.muted,
+      this.save.data.audio.bgm,
+      this.save.data.audio.sfx,
+    );
+    this.garage = new Garage(
+      ui,
+      {
+        coins: this.save.data.coins,
+        owned: this.save.data.car.owned,
+        currentId: this.save.data.car.id,
+        currentColor: this.save.data.car.color,
+      },
+      {
+        onBuy: (id, price) => this.buyVehicle(id, price),
+        onEquip: (id, color) => this.equipVehicle(id, color),
+        onClose: () => this.menu?.show(),
+      },
+    );
+    this.pause = new Pause(ui, {
+      onResume: () => this.setPaused(false),
+      onRestart: () => this.restartMode(),
+      onMenu: () => this.exitToMenu(),
+      onTime: (id) => this.setTime(id, true),
+      onMute: (muted) => {
+        this.save.data.audio.muted = muted;
+        this.save.save();
+        this.audio.setMuted(muted);
+      },
+    });
     this.clock = new GameClock(PHYSICS.FIXED_STEP);
     this.input.attach(this.engine.canvas);
 
     this.setTime('day', true);
     this.engine.applyPreset(TIME_PRESETS.day);
+    void bus.on('vehicle:shift', () => this.audio.playShift());
+    void bus.on('vehicle:collide', (event) => this.audio.playCollision(event.intensity));
   }
 
   async boot(): Promise<void> {
@@ -114,6 +154,7 @@ class Game {
     this.menu = new Menu(this.uiRoot, {
       onStart: () => this.startDrive(),
       onRace: () => this.openRaceSetup(),
+      onGarage: () => this.openGarage(),
       onTime: (id: TimeId) => {
         this.setTime(id, true);
         this.menu?.setActiveTime(id);
@@ -176,7 +217,7 @@ class Game {
     const dt = this.clock.stepSeconds;
     const frameDt = info.frameDt;
 
-    if (this.mode !== 'menu') {
+    if (this.mode !== 'menu' && !this.paused) {
       const locked = this.race?.phase === 'countdown';
       const driveInput = locked
         ? { throttle: 0, brake: 0, steer: 0, handbrake: true }
@@ -190,6 +231,15 @@ class Game {
     this.updateWorld(dt, info.alpha);
     this.traffic.update(frameDt);
     this.updateRace(frameDt);
+    if (!this.paused) {
+      this.audio.update(
+        this.dynamics.state.speed,
+        this.dynamics.rpmRatio,
+        this.input.state.throttle,
+        this.dynamics.state.lateral,
+        this.dynamics.state.gear,
+      );
+    }
     this.updateLampLights(frameDt);
     this.handleActions();
 
@@ -286,6 +336,10 @@ class Game {
       if (this.input.consume('time')) this.cycleTime();
       return;
     }
+    if (this.input.consume('pause')) {
+      this.setPaused(!this.paused);
+      return;
+    }
     if (this.input.consume('camera')) {
       const mode = this.rig.cycle();
       this.hud.toast(
@@ -312,11 +366,85 @@ class Game {
   }
 
   private startDrive(): void {
+    void this.audio.init();
     this.mode = 'drive';
     this.menu?.hide();
     this.hud.setVisible(true);
     this.rig.snap();
     this.hud.toast('WASD 驾驶 · 空格漂移 · C 视角', 'info');
+  }
+
+  /** 打开车库（菜单背景保留，车辆在场景里可继续被环绕展示） */
+  private openGarage(): void {
+    this.menu?.hide();
+    this.garage.show({
+      coins: this.save.data.coins,
+      owned: this.save.data.car.owned,
+      currentId: this.save.data.car.id,
+      currentColor: this.save.data.car.color,
+    });
+  }
+
+  private buyVehicle(id: string, price: number): boolean {
+    if (this.save.data.coins < price) {
+      this.hud.toast('金币不足', 'warn');
+      return false;
+    }
+    this.save.data.coins -= price;
+    if (!this.save.data.car.owned.includes(id)) this.save.data.car.owned.push(id);
+    this.save.save();
+    this.menu?.setCoins(this.save.data.coins);
+    this.audio.playClick();
+    return true;
+  }
+
+  private equipVehicle(id: string, color: string): void {
+    const spec = VEHICLES.find((v) => v.id === id);
+    if (!spec) return;
+    this.save.data.car.id = id;
+    this.save.data.car.color = color;
+    this.save.save();
+    this.dynamics.setSpec(spec);
+    this.vehicle.setPaint(color);
+    this.audio.playClick();
+  }
+
+  private setPaused(paused: boolean): void {
+    if (this.mode === 'menu') return;
+    this.paused = paused;
+    if (paused) {
+      this.pause.show(this.timeId);
+      this.audio.suspend();
+    } else {
+      this.pause.hide();
+      this.audio.resume();
+      this.clock.begin(performance.now());
+    }
+  }
+
+  private restartMode(): void {
+    this.setPaused(false);
+    if (this.mode === 'race' && this.lastSetup) {
+      this.startRace(this.lastSetup);
+    } else {
+      this.dynamics.reset(WORLD.SPAWN_X, WORLD.SPAWN_Z, Math.PI * 0.5);
+      this.rig.snap();
+    }
+  }
+
+  private exitToMenu(): void {
+    this.setPaused(false);
+    this.mode = 'menu';
+    this.race = null;
+    this.disposeAiRacers();
+    this.traffic.setVisible(true);
+    this.raceUi.hideCountdown();
+    this.raceUi.hideResults();
+    this.garage.hide();
+    this.menu?.show();
+    this.hud.setVisible(false);
+    this.dynamics.reset(WORLD.SPAWN_X, WORLD.SPAWN_Z, Math.PI * 0.5);
+    this.rig.snap();
   }
 
   /** 打开竞速设置（不切场景，菜单背景仍可看见城市） */
@@ -328,6 +456,7 @@ class Game {
   }
 
   private startRace(setup: RaceSetup): void {
+    void this.audio.init();
     this.lastSetup = setup;
     const layout = setup.layout;
     this.mode = 'race';

@@ -46,9 +46,9 @@ export class VehicleDynamics {
   state: VehicleState;
   private driftLatch = false;
   private shiftTimer = 0;
-  private readonly gearMaxSpeeds: number[];
+  private gearMaxSpeeds: number[];
 
-  constructor(readonly spec: VehicleSpec) {
+  constructor(public spec: VehicleSpec) {
     this.gearMaxSpeeds = VehicleDynamics.gearMaxSpeeds(spec);
     this.state = {
       x: 0,
@@ -67,6 +67,13 @@ export class VehicleDynamics {
       prevZ: 0,
       prevHeading: 0,
     };
+  }
+
+  /** 换车：更新参数并重算各挡极速 */
+  setSpec(spec: VehicleSpec): void {
+    this.spec = spec;
+    this.gearMaxSpeeds = VehicleDynamics.gearMaxSpeeds(spec);
+    this.state.rpm = spec.engineIdleRpm;
   }
 
   reset(x: number, z: number, heading: number): void {
