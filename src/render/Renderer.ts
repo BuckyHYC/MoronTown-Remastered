@@ -214,8 +214,11 @@ export class RenderEngine {
     const ratio = this.basePixelRatio * this.renderScale;
     this.renderer.setPixelRatio(ratio);
     this.renderer.setSize(this.width, this.height, false);
-    this.composer?.setPixelRatio(ratio);
-    this.composer?.setSize(this.width, this.height);
+    if (this.composer) {
+      // composer 自身 pixelRatio 固定为 1，直接用像素尺寸缩放，避免与 renderer 双重缩放
+      this.composer.setPixelRatio(1);
+      this.composer.setSize(Math.max(2, Math.round(this.width * ratio)), Math.max(2, Math.round(this.height * ratio)));
+    }
     if (this.aaPass instanceof SMAAPass) this.aaPass.setSize(this.width, this.height);
     if (this.aaPass instanceof ShaderPass) {
       this.aaPass.material.uniforms.resolution.value.set(1 / this.width, 1 / this.height);

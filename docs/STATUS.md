@@ -117,3 +117,10 @@
 - 定位到真正原因：Round 6 的自适应分辨率在 SwiftShader/合成器路径下调用 composer.setPixelRatio + setSize 后输出变黑（drawcall 仍有 271，但帧缓冲全黑）。现改为 daptiveEnabled = false 默认关闭，验证截图恢复正常（33KB 黑屏 → 763KB 正常）。
 - 后续需在真实 GPU 上重新验证自适应分支，再决定是否默认开启。
 
+
+## Round 9：修复自适应分辨率黑屏并重新启用
+
+- RenderEngine.applyPixelRatio 改为：renderer 按 pixelRatio 缩放；composer 固定 pixelRatio=1，直接按像素尺寸（width×ratio）调用 setSize，彻底避开双重缩放。
+- main.adaptiveEnabled 重新置 true；night/day 两张截图分别 456KB / 827KB，均正常渲染，无黑屏。
+- 自适应仍在 SwiftShader 下工作（fps 低时降采样），真实 GPU 档位验证待补。
+

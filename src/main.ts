@@ -58,7 +58,7 @@ class Game {
   private saveTimer = 0;
   private adaptiveTimer = 0;
   private renderScale = 1;
-  private adaptiveEnabled = false;
+  private adaptiveEnabled = true;
   readonly pause: Pause;
   private paused = false;
   private race: RaceManager | null = null;
