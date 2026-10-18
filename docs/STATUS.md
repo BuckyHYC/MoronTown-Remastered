@@ -81,3 +81,16 @@
 - 主循环统计：里程按 0.1km 落盘、每 km 折算 2 金币；极速纪录、行驶时长、累计赚取实时累计；成就自动解锁发奖。
 - 截图：`docs/screenshots/career.png`、`drive-peds.png`。
 - 验证：生涯屏正常渲染；瞬移到行人位置后 `pedestrianKills=1`、`coins=5`。
+
+## Round 5：性能探针 + 单测基线
+
+- `tools/perf-probe.mjs`：1920×1080、真实 Chrome（ANGLE/D3D11）、行驶 6–8s，采样 rAF 帧间隔，输出 avg / 1% low / drawcall / 三角形。
+- 实测（headless Chrome 自动选中的是 **Intel UHD Graphics**，非 RTX 5070）：
+  | 档位 | avg fps | 1% low | drawcall | 三角形 |
+  |---|---|---|---|---|
+  | low | 40.6 | 32.9 | 148 | 278k |
+  | medium | 23.1 | 12.7 | 271 | 501k |
+  | high | ~11 | — | 275 | 501k |
+  结论：low 档在集显上仍有 40fps，可用于无头/弱机；high 档必须在独显上复测（Chrome headless 未选中 RTX 5070，待有窗口模式下再验证）。
+- `tests/unit/*.test.ts`：9 条单测（极速夹紧、自动升挡、刹车/倒车、换车参数、日期键、每日任务确定性、签到奖励封顶、成就判定），`npx vitest run` 全绿。
+- 尚未建立 Playwright e2e 与视觉回归基线。
