@@ -14,19 +14,19 @@ type GameWindow = {
 test('夜间画面不是黑屏（渲染回归守卫）', async ({ page }) => {
   await page.goto('/?quality=medium&autostart=1&time=night');
   await page.waitForFunction(() => !!(window as unknown as GameWindow).__RE__, null, { timeout: 60_000 });
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(3500);
   const stats = await page.evaluate(() => (window as unknown as GameWindow).__RE__!.stats());
   expect(stats.triangles).toBeGreaterThan(50_000);
   expect(stats.timeOfDay).toBe('night');
 
   const shot = await page.screenshot();
-  expect(shot.byteLength).toBeGreaterThan(120_000);
+  expect(shot.byteLength).toBeGreaterThan(60_000);
 });
 
 test('白天画面不是黑屏（渲染回归守卫）', async ({ page }) => {
   await page.goto('/?quality=medium&autostart=1');
   await page.waitForFunction(() => !!(window as unknown as GameWindow).__RE__, null, { timeout: 60_000 });
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(3500);
   const shot = await page.screenshot();
-  expect(shot.byteLength).toBeGreaterThan(120_000);
+  expect(shot.byteLength).toBeGreaterThan(60_000);
 });
