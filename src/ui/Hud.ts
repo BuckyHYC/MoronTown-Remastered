@@ -14,6 +14,9 @@ export interface HudData {
   kills: number;
   cameraMode: string;
   bestLapMs?: number;
+  playerX?: number;
+  playerZ?: number;
+  heading?: number;
   route?: { x: number; z: number }[];
   racers?: { x: number; z: number; isPlayer: boolean }[];
   timeOfDay: string;
@@ -192,12 +195,21 @@ export class Hud {
       ctx.fill();
     }
 
+    const px = toX(data.playerX ?? 300);
+    const py = toY(data.playerZ ?? 450);
+    const heading = data.heading ?? 0;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(-heading);
     ctx.fillStyle = '#ff8a2a';
     ctx.beginPath();
-    const px = toX(data.mode === 'race' ? 300 : 300);
-    const py = toY(450);
-    ctx.arc(px, py, 3.4, 0, Math.PI * 2);
+    ctx.moveTo(0, -6);
+    ctx.lineTo(4.2, 5);
+    ctx.lineTo(0, 2.6);
+    ctx.lineTo(-4.2, 5);
+    ctx.closePath();
     ctx.fill();
+    ctx.restore();
   }
 }
 
