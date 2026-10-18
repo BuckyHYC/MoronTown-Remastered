@@ -5,11 +5,14 @@ import * as THREE from 'three';
 (window as unknown as Record<string, unknown>).THREE = THREE;
 import { RenderEngine } from './render/Renderer';
 import { SkySystem } from './render/Sky';
+import { PlanarReflector } from './render/Reflector';
+import { Signage } from './world/Signage';
 import { CityWorld, type Aabb } from './world/CityWorld';
 import { VehicleModel } from './vehicle/Vehicle';
 import { VehicleDynamics } from './gameplay/Dynamics';
 import { CameraRig } from './gameplay/CameraRig';
 import { InputSystem } from './gameplay/Input';
+import { Traffic } from './gameplay/Traffic';
 import { Hud } from './ui/Hud';
 import { Menu } from './ui/Menu';
 import { GameClock } from './core/Clock';
@@ -33,6 +36,9 @@ class Game {
   readonly engine: RenderEngine;
   readonly sky: SkySystem;
   readonly world: CityWorld;
+  readonly signage: Signage;
+  readonly traffic: Traffic;
+  readonly reflector: PlanarReflector | null = null;
   readonly vehicle: VehicleModel;
   readonly dynamics: VehicleDynamics;
   readonly rig: CameraRig;
@@ -49,7 +55,7 @@ class Game {
   private readonly carPos = new THREE.Vector3(WORLD.SPAWN_X, 0, WORLD.SPAWN_Z);
   private photo: { angle: number; radius: number; height: number } | null = null;
   private menu: Menu | null = null;
-  private menuAngle = Math.PI / 2 - 0.55;
+  private menuAngle = 2.15;
   private headlights: THREE.SpotLight[] = [];
   private readonly lampLights: THREE.PointLight[] = [];
   private lampTimer = 0;
@@ -62,6 +68,16 @@ class Game {
     this.world = new CityWorld();
     this.world.build(this.scene);
     this.colliders.push(...this.world.colliders);
+
+    this.signage = new Signage(this.world.footprints, 150);
+    this.scene.add(this.signage.group);
+    this.traffic = new Traffic(this.scene, 4, 48);
+
+    if (this.world.roadGeometry && this.engine.quality.reflection !== 'off') {
+      const half = this.engine.quality.reflection === 'half' ? 0.5 : 0.4;
+      this.reflector = new PlanarReflector(this.world.roadGeometry, half);
+      this.scene.add(this.reflector.mesh);
+    }
 
     const spec = VEHICLES[0];
     this.vehicle = new VehicleModel(spec);
@@ -126,6 +142,8 @@ class Game {
     const preset = TIME_PRESETS[id];
     this.world.setNight(preset.neon);
     this.world.setLampIntensity(preset.lamp);
+    this.signage.setNight(preset.neon);
+    this.reflector?.setWetness(preset.wetness);
     const headStrength = preset.lamp > 0.25 ? preset.lamp : 0;
     for (const spot of this.headlights) {
       spot.intensity = headStrength * 70;
@@ -156,12 +174,14 @@ class Game {
     }
 
     this.updateWorld(dt, info.alpha);
+    this.traffic.update(frameDt);
     this.updateLampLights(frameDt);
     this.handleActions();
 
     const speedRatio = this.dynamics.speedRatio;
     this.engine.setSpeed(speedRatio, this.elapsed);
     this.sky.update(this.camera.position, this.elapsed);
+    this.reflector?.update(this.engine.renderer, this.scene, this.camera, this.elapsed);
     this.engine.render();
 
     this.elapsed += frameDt;
@@ -207,12 +227,12 @@ class Game {
     );
 
     if (this.mode === 'menu') {
-      this.menuAngle += dt * 0.1;
-      const radius = 12.6;
+      const radius = 12.8;
+      const angle = this.menuAngle + Math.sin(this.elapsed * 0.22) * 0.12;
       this.camera.position.set(
-        x + Math.sin(this.menuAngle) * radius,
-        3.05,
-        z + Math.cos(this.menuAngle) * radius,
+        x + Math.sin(angle) * radius,
+        3.1,
+        z + Math.cos(angle) * radius,
       );
       this.camera.lookAt(x, 0.92, z);
       this.camera.fov = 42;
@@ -350,10 +370,37 @@ class Game {
     const bound = this.world.span + 30;
     s.x = Math.max(-30, Math.min(bound, s.x));
     s.z = Math.max(-30, Math.min(bound, s.z));
+
+    // 与交通车辆的圆-圆推离
+    for (const car of this.traffic.colliders()) {
+      const dx = s.x - car.x;
+      const dz = s.z - car.z;
+      const minDist = radius + car.radius;
+      const dist2 = dx * dx + dz * dz;
+      if (dist2 >= minDist * minDist) continue;
+      const dist = Math.sqrt(dist2) || 0.0001;
+      const nx = dist2 > 1e-6 ? dx / dist : 1;
+      const nz = dist2 > 1e-6 ? dz / dist : 0;
+      const push = minDist - dist;
+      s.x += nx * push;
+      s.z += nz * push;
+      const impact = Math.abs(s.speed);
+      if (impact > 3) {
+        s.speed *= 0.6;
+        s.lateral *= 0.5;
+        this.rig.addShake(Math.min(0.7, impact / 45));
+        bus.emit('vehicle:collide', { intensity: impact, x: s.x, z: s.z });
+      }
+    }
   }
 
   resize(): void {
     this.engine.resize(window.innerWidth, window.innerHeight);
+    this.reflector?.resize(
+      window.innerWidth,
+      window.innerHeight,
+      this.engine.quality.reflection === 'half' ? 0.5 : 0.4,
+    );
   }
 
   get stats() {

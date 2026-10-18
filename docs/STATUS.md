@@ -44,3 +44,13 @@
 4. M5：交通与行人（车道图 + 状态机 + 实例化）。
 5. M6：三张赛道 + 检查点 + AI + 结算。
 6. M7：全部 12 屏 + 触屏 + 音频分层。
+
+## 本轮（Round 1）新增
+
+- 湿路平面反射（`src/render/Reflector.ts`）：镜像相机半分辨率重绘 + 屏幕投影采样，只作用于路面几何，按湿度的菲涅尔混合。
+- 临街霓虹招牌（`src/world/Signage.ts`）：8 套中文文案、双立面挂载 + 高楼屋顶广告牌，夜间自发光。
+- 立面重做（`src/render/FacadeMaterial.ts`）：2.05×3.05m 窗格 + 窗框高光 + 楼层腰线 + 3.4m 开间商铺橱窗，窗户 roughness 压到 0.08 让 IBL 反射天空。
+- 城市加密：街块内 3×3 建筑单元，建筑数 55 → 124；商铺立面改为白色檐口，去掉整条橙色发光带。
+- 交通流（`src/gameplay/Traffic.ts`）：48 台车、双向四车道、循环回绕，两个 InstancedMesh 绘制，玩家碰撞按圆-圆推离。
+- 渲染/光照微调：日间太阳 3.1 / 半球光 0.9、阴影半径 2.5，夜间泛光阈值 1.15 防过曝；菜单相机固定到受光侧。
+- 截图：`docs/screenshots/menu-day.png`、`menu-night.png`、`drive-night.png`、`city-aerial.png`。

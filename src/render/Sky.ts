@@ -152,6 +152,7 @@ export class SkySystem {
     this.sun.shadow.camera.far = 700;
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.02;
+    this.sun.shadow.radius = 2.5;
     scene.add(this.sun);
     scene.add(this.sun.target);
 

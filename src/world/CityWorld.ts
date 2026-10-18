@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MATERIALS } from '../core/Registry';
 import { WORLD } from '../core/Config';
+import { createFacadeMaterial } from '../render/FacadeMaterial';
 
 export interface Aabb {
   minX: number;
@@ -17,6 +18,8 @@ export interface Aabb {
 export class CityWorld {
   readonly group = new THREE.Group();
   readonly colliders: Aabb[] = [];
+  readonly footprints: { x: number; z: number; w: number; d: number; h: number }[] = [];
+  roadGeometry: THREE.BufferGeometry | null = null;
   readonly lampPositions: THREE.Vector3[] = [];
   private facadeUniforms = { uNight: { value: 0 } };
   private buildingCount = 0;
@@ -45,7 +48,7 @@ export class CityWorld {
 
   setNight(value: number): void {
     this.facadeUniforms.uNight.value = value;
-    if (this.storefrontMaterial) this.storefrontMaterial.emissiveIntensity = value * 0.22;
+    if (this.storefrontMaterial) this.storefrontMaterial.color.setScalar(0.5 + value * 0.06);
   }
 
   private addGround(): void {
@@ -71,6 +74,7 @@ export class CityWorld {
     const mesh = new THREE.Mesh(merged, this.mats.asphalt);
     mesh.receiveShadow = true;
     mesh.name = 'roads';
+    this.roadGeometry = merged;
     this.group.add(mesh);
   }
 
@@ -149,7 +153,7 @@ export class CityWorld {
 
   private addBuildings(): void {
     const blockInner = WORLD.BLOCK_LENGTH - WORLD.BUILDING_INSET * 2;
-    const cells = 2;
+    const cells = 3;
     const cellSize = blockInner / cells;
     const transform = new THREE.Object3D();
     const color = new THREE.Color();
@@ -166,10 +170,10 @@ export class CityWorld {
       for (let j = 0; j < this.blocks; j += 1) {
         for (let cx = 0; cx < cells; cx += 1) {
           for (let cz = 0; cz < cells; cz += 1) {
-            if (rand() < 0.14) continue;
-            const inner = cellSize - 8;
-            const w = inner * (0.55 + rand() * 0.4);
-            const d = inner * (0.55 + rand() * 0.4);
+            if (rand() < 0.1) continue;
+            const inner = cellSize - 5;
+            const w = inner * (0.72 + rand() * 0.26);
+            const d = inner * (0.72 + rand() * 0.26);
             const x = i * WORLD.BLOCK_LENGTH + WORLD.BUILDING_INSET + cellSize * (cx + 0.5);
             const z = j * WORLD.BLOCK_LENGTH + WORLD.BUILDING_INSET + cellSize * (cz + 0.5);
             const tall = rand() < 0.18;
@@ -206,6 +210,7 @@ export class CityWorld {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     this.group.add(mesh);
     this.buildingCount = items.length;
+    this.footprints.push(...items);
     this.addFacadeDetails(items);
   }
 
@@ -241,12 +246,10 @@ export class CityWorld {
     this.group.add(ledgeMesh);
 
     const storeMat = new THREE.MeshStandardMaterial({
-      color: 0x121820,
-      roughness: 0.22,
-      metalness: 0.5,
-      emissive: 0xffb867,
-      emissiveIntensity: 0,
-      envMapIntensity: 1.1,
+      color: 0x86827a,
+      roughness: 0.78,
+      metalness: 0.05,
+      envMapIntensity: 0.7,
     });
     const storeGeo = new THREE.BoxGeometry(1, 1, 1);
     storeGeo.translate(0, 0.5, 0);
@@ -254,8 +257,8 @@ export class CityWorld {
     storeMesh.name = 'facade-storefront';
     storeMesh.receiveShadow = true;
     items.forEach((item, i) => {
-      transform.position.set(item.x, 0, item.z);
-      transform.scale.set(item.w + 0.5, 4.2, item.d + 0.5);
+      transform.position.set(item.x, 4.15, item.z);
+      transform.scale.set(item.w + 0.55, 0.42, item.d + 0.55);
       transform.updateMatrix();
       storeMesh.setMatrixAt(i, transform.matrix);
     });
@@ -299,61 +302,9 @@ export class CityWorld {
 
   private storefrontMaterial: THREE.MeshStandardMaterial | null = null;
 
-  /** 程序化立面：世界坐标窗格 + 楼层线 + 夜间随机亮灯 */
+  /** 程序化立面：窗框 / 层线 / 商铺橱窗 / 夜间亮灯（实现见 render/FacadeMaterial.ts） */
   private createFacadeMaterial(): THREE.MeshStandardMaterial {
-    const uniforms = this.facadeUniforms;
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.86,
-      metalness: 0.02,
-      envMapIntensity: 0.55,
-    });
-    material.onBeforeCompile = (shader) => {
-      shader.uniforms.uNight = uniforms.uNight;
-      shader.vertexShader = shader.vertexShader
-        .replace(
-          '#include <common>',
-          '#include <common>\nvarying vec3 vFacadePos;\nvarying vec3 vFacadeNormal;',
-        )
-        .replace(
-          '#include <worldpos_vertex>',
-          `#include <worldpos_vertex>
-           vec4 facadeWorld = vec4(transformed, 1.0);
-           #ifdef USE_INSTANCING
-             facadeWorld = instanceMatrix * facadeWorld;
-           #endif
-           facadeWorld = modelMatrix * facadeWorld;
-           vFacadePos = facadeWorld.xyz;
-           vFacadeNormal = normalize(mat3(modelMatrix) * objectNormal);`,
-        );
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <common>',
-          '#include <common>\nvarying vec3 vFacadePos;\nvarying vec3 vFacadeNormal;\nuniform float uNight;\nfloat reHash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453); }',
-        )
-        .replace(
-          '#include <map_fragment>',
-          `#include <map_fragment>
-           float along = abs(vFacadeNormal.x) > abs(vFacadeNormal.z) ? vFacadePos.z : vFacadePos.x;
-           vec2 cell = vec2(2.7, 3.3);
-           vec2 g = vec2(along / cell.x, (vFacadePos.y - 0.4) / cell.y);
-           vec2 id = floor(g);
-           vec2 f = fract(g);
-           float win = step(0.16, f.x) * step(f.x, 0.84) * step(0.22, f.y) * step(f.y, 0.78);
-           float floorBand = smoothstep(0.055, 0.0, abs(f.y - 0.005) + abs(f.y - 0.995));
-           float rnd = reHash(id);
-           vec3 glassTint = mix(vec3(0.055, 0.062, 0.075), vec3(0.14, 0.155, 0.185), win);
-           diffuseColor.rgb *= mix(vec3(1.0), glassTint, win);
-           diffuseColor.rgb *= mix(1.0, 0.82, floorBand);
-           float lit = step(0.58, rnd);
-           vec3 warm = vec3(1.0, 0.82, 0.55);
-           vec3 cool = vec3(0.72, 0.86, 1.0);
-           vec3 lampColor = mix(warm, cool, step(0.55, fract(rnd * 7.3)));
-           totalEmissiveRadiance += win * lit * uNight * lampColor * 0.62;`,
-        );
-    };
-    material.customProgramCacheKey = () => 'facade-v1';
-    return material;
+    return createFacadeMaterial(this.facadeUniforms);
   }
 
   private addLamps(): void {
