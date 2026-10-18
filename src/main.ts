@@ -651,6 +651,10 @@ class Game {
         if (this.lastSetup) this.startRace(this.lastSetup);
       },
       () => this.exitRace(),
+      () => {
+        this.exitRace();
+        this.startDrive();
+      },
     );
   }
 
