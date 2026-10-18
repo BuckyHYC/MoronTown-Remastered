@@ -24,6 +24,7 @@ export interface HudData {
 }
 
 const RING_LENGTH = 2 * Math.PI * 46;
+const REV_LENGTH = 2 * Math.PI * 39;
 
 /** 驾驶 HUD：四角信息 + 速度环 + 遥测条 + 小地图 */
 export class Hud {
@@ -55,6 +56,12 @@ export class Hud {
           <b data-pos>1</b><span data-total>/1</span>
         </div>
         <div class="pos-label">位置</div>
+        <div class="hud-status">
+          <span data-coins>◈ 0</span>
+          <span data-kills>撞击 0</span>
+          <span data-camera>追尾</span>
+          <span data-tod>白天</span>
+        </div>
       </div>
       <div class="hud-top">
         <div class="lap-block"><span data-lap>01</span><i>/</i><span data-laps>01</span></div>
@@ -69,21 +76,15 @@ export class Hud {
         <svg viewBox="0 0 120 120" class="speed-svg">
           <circle class="ring-track" cx="60" cy="60" r="46"></circle>
           <circle class="ring-fill" cx="60" cy="60" r="46" data-ring></circle>
+          <circle class="rev-track" cx="60" cy="60" r="39"></circle>
+          <circle class="rev-fill" cx="60" cy="60" r="39" data-rpm></circle>
+          <circle class="rev-redline" cx="60" cy="60" r="39"></circle>
         </svg>
         <div class="speed-center">
           <div class="speed-num" data-speed>0</div>
           <div class="speed-unit">KM/H</div>
         </div>
         <div class="gear-badge"><span data-gear>1</span><i>挡</i></div>
-      </div>
-      <div class="hud-bottom">
-        <div class="rpm-bar"><i data-rpm></i></div>
-        <div class="hud-meta">
-          <span data-coins>◈ 0</span>
-          <span data-kills>撞击 0</span>
-          <span data-camera>追尾</span>
-          <span data-tod>白天</span>
-        </div>
       </div>
       <div class="hud-toast" data-toast></div>
       <div class="hud-help">C 视角 · T 时段 · N 天气 · R 重置 · Esc 暂停</div>
@@ -114,13 +115,22 @@ export class Hud {
 
     this.ringEl.style.strokeDasharray = `${RING_LENGTH}`;
     this.ringEl.style.strokeDashoffset = `${RING_LENGTH}`;
+    this.rpmEl.style.strokeDasharray = `${REV_LENGTH}`;
+    this.rpmEl.style.strokeDashoffset = `${REV_LENGTH}`;
+    const redline = this.root.querySelector<SVGCircleElement>('.rev-redline');
+    if (redline) {
+      redline.style.strokeDasharray = `${REV_LENGTH * 0.09} ${REV_LENGTH}`;
+      redline.style.strokeDashoffset = `${-REV_LENGTH * 0.9}`;
+    }
   }
 
   update(data: HudData): void {
     this.speedEl.textContent = String(Math.round(data.speedKmh));
     this.gearEl.textContent = data.gear === 0 ? 'R' : String(data.gear);
     const ratio = Math.min(1, data.rpmRatio);
-    this.rpmEl.style.transform = `scaleX(${0.04 + ratio * 0.96})`;
+    // 转速：内圈弧长（从左下顺时），高档位接近红区时变色
+    this.rpmEl.style.strokeDashoffset = `${REV_LENGTH * (1 - ratio)}`;
+    this.rpmEl.style.stroke = ratio > 0.95 ? '#ff4a37' : ratio > 0.85 ? '#ffb02e' : '#63d5ff';
     this.ringEl.style.strokeDashoffset = `${RING_LENGTH * (1 - Math.min(1, data.speedKmh / 280))}`;
     // 高速速度线：约 110km/h 起，260km/h 完全展开
     const rush = Math.min(1, Math.max(0, (data.speedKmh - 110) / 150));

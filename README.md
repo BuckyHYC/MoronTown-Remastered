@@ -18,7 +18,7 @@
 | 特效（胎痕、胎烟、雨幕 + 雨声 + 高速速度线） | ✅ |
 | 交通流 48 台（挤出车身 + 座舱玻璃）+ 行人 72 名（胶囊体人形，可撞倒） | ✅ |
 | 任务点（3 个发光圆环，开进即弹出对应赛道设置） | ✅ |
-| 触屏（虚拟摇杆 + 油门/刹车/漂移 + 视角键，`?touch=1` 强制开启） | ✅ |
+| 触屏（虚拟摇杆 + 油门/刹车/漂移 + 视角 + 暂停键，`?touch=1` 强制开启；暂停面板含画质/转向反转） | ✅ |
 | 竞速闭环（3 赛道 / 检查点 / 倒计时 / AI / 排名 / 结算 / 奖励） | ✅ |
 | 车库（6 款车 / 涂装 / 购买装备 / 切换动力学参数，主场景展台机位绕车展示） | ✅ |
 | 生涯（签到 / 每日任务 / 14 成就 / 统计 / 里程奖励） | ✅ |
@@ -35,7 +35,7 @@ npm install
 npm run dev          # http://localhost:5174
 npm run build        # tsc --noEmit && vite build
 npm test             # vitest（9 条）
-npx playwright test  # e2e（12 条）
+npx playwright test  # e2e（14 条）
 node tools/perf-probe.mjs high 10  # 真实 GPU 性能探针（需 --force_high_performance_gpu 才走独显）
 ```
 
@@ -90,6 +90,7 @@ docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 - [docs/ART-BIBLE.md](docs/ART-BIBLE.md)：画质目标、色板、材质与 HUD 栅格
 - [docs/ASSETS.md](docs/ASSETS.md)：资产清单、许可与优化流程
 - [docs/STATUS.md](docs/STATUS.md)：里程碑进度、实测数据、已知缺口
+
 
 
 

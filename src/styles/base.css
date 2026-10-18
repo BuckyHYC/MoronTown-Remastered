@@ -22,6 +22,16 @@
 
 * {
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+kbd {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 html,
@@ -344,41 +354,37 @@ canvas {
   letter-spacing: 0.2em;
 }
 
-.hud-bottom {
-  position: absolute;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  width: min(560px, 52vw);
-  display: grid;
-  gap: 8px;
+.rev-track {
+  fill: none;
+  stroke: rgba(150, 195, 235, 0.13);
+  stroke-width: 3;
 }
 
-.rpm-bar {
-  height: 3px;
-  background: rgba(140, 185, 225, 0.14);
-  border-radius: 2px;
-  overflow: hidden;
+.rev-fill {
+  fill: none;
+  stroke: #63d5ff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.06s linear, stroke 0.2s linear;
+  filter: drop-shadow(0 0 5px rgba(99, 213, 255, 0.45));
 }
 
-.rpm-bar i {
-  display: block;
-  height: 100%;
-  width: 100%;
-  transform-origin: left center;
-  transform: scaleX(0.1);
-  background: linear-gradient(90deg, #45c8ff 0%, #8ee7c4 52%, #ffcf5c 78%, #ff5a3c 100%);
-  transition: transform 0.06s linear;
+.rev-redline {
+  fill: none;
+  stroke: rgba(255, 74, 55, 0.82);
+  stroke-width: 3;
+  stroke-linecap: butt;
 }
 
-.hud-meta {
+.hud-status {
   display: flex;
-  justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
+  margin-top: 8px;
   font-size: 10.5px;
   letter-spacing: 0.14em;
   color: var(--muted);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .hud-toast {
@@ -437,11 +443,82 @@ canvas {
     right: 18px;
     bottom: 28px;
   }
-  .hud-bottom {
-    width: 70vw;
-  }
   .hud-help {
     display: none;
+  }
+}
+
+/* 手机竖屏：缩小/重排 HUD，给摇杆与踏板让位 */
+@media (max-width: 760px) {
+  .hud-tl {
+    top: 14px;
+    left: 14px;
+  }
+  .pos-block b {
+    font-size: 34px;
+  }
+  .pos-block span {
+    font-size: 13px;
+  }
+  .hud-status {
+    flex-wrap: wrap;
+    max-width: 46vw;
+    gap: 4px 9px;
+    margin-top: 4px;
+    font-size: 9px;
+  }
+  .hud-top {
+    top: 8px;
+    padding: 5px 12px 6px;
+    min-width: 0;
+    gap: 0;
+  }
+  .lap-block {
+    font-size: 10px;
+  }
+  .time-block {
+    font-size: 15px;
+  }
+  .time-best {
+    display: none;
+  }
+  .hud-map {
+    top: 8px;
+    right: 8px;
+    width: 92px;
+    padding: 6px;
+    border-radius: 10px;
+  }
+  .map-head {
+    font-size: 7.5px;
+    letter-spacing: 0.06em;
+    margin-bottom: 3px;
+  }
+  .hud-speed {
+    right: 10px;
+    bottom: 236px;
+    width: 100px;
+    height: 100px;
+  }
+  .speed-num {
+    font-size: 27px;
+  }
+  .speed-unit {
+    font-size: 8px;
+    letter-spacing: 0.16em;
+  }
+  .gear-badge {
+    padding: 2px 5px;
+    bottom: 4px;
+    right: 4px;
+  }
+  .gear-badge span {
+    font-size: 14px;
+  }
+  .hud-toast {
+    bottom: 344px;
+    font-size: 11px;
+    padding: 7px 14px;
   }
 }
 
@@ -577,5 +654,113 @@ canvas {
   .touch-brake {
     width: 74px;
     height: 74px;
+  }
+}
+
+/* 触屏暂停键：底部居中，避开摇杆与踏板 */
+.touch-pause {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  font-size: 17px;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: auto;
+  background: rgba(10, 18, 28, 0.62);
+  border-color: rgba(180, 215, 245, 0.34);
+}
+
+.touch-pause:active {
+  background: rgba(60, 140, 210, 0.5);
+}
+
+@media (max-width: 760px) {
+  .pause-panel,
+  .race-panel {
+    width: min(360px, 92vw);
+    padding: 16px 16px;
+  }
+  .pause-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .pause-actions .race-go {
+    grid-column: span 2;
+  }
+  .pause-times,
+  .race-options {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .race-head b {
+    font-size: 15px;
+  }
+}
+
+/* ================= 移动端触屏布局（必须排在基础触屏样式之后才生效） ================= */
+@media (max-width: 760px) {
+  .touch-stick {
+    left: 20px;
+    bottom: 28px;
+    width: 118px;
+    height: 118px;
+  }
+  .touch-knob {
+    width: 48px;
+    height: 48px;
+  }
+  .touch-side {
+    right: 18px;
+    bottom: 24px;
+    gap: 8px;
+  }
+  .touch-gas,
+  .touch-brake {
+    width: 84px;
+    height: 84px;
+    font-size: 13px;
+  }
+  .touch-drift,
+  .touch-cam {
+    height: 34px;
+    padding: 0 13px;
+    font-size: 11px;
+  }
+  .touch-pause {
+    left: 26px;
+    bottom: 168px;
+    transform: none;
+    width: 46px;
+    height: 46px;
+    font-size: 15px;
+  }
+}
+
+/* 横屏手机：踏板在右下，速度环挪到踏板左侧，暂停键回到底部中间 */
+@media (max-height: 520px) {
+  .hud-speed {
+    right: 188px;
+    bottom: 14px;
+    width: 92px;
+    height: 92px;
+  }
+  .hud-map {
+    width: 104px;
+    padding: 5px;
+  }
+  .hud-toast {
+    bottom: 118px;
+  }
+  .touch-pause {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 16px;
+    width: 42px;
+    height: 42px;
+    font-size: 14px;
   }
 }

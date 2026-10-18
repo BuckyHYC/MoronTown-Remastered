@@ -1,0 +1,18 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ channel: 'chrome', args: ['--enable-gpu','--use-angle=d3d11','--force_high_performance_gpu','--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: 1200, height: 760 } });
+await page.goto('http://localhost:5174/?quality=high&time=day&autostart=1', { waitUntil: 'load' });
+await page.waitForFunction(() => !!window.__RE__, { timeout: 60000 });
+await page.waitForTimeout(2000);
+await page.evaluate(() => window.__RE__.game.input.setTouch(1, 1, 0, false));
+await page.waitForTimeout(2000);
+const s1 = await page.evaluate(() => ({ roll: +window.__RE__.game.vehicle.wheels[0].roll.rotation.x.toFixed(2), steer: +window.__RE__.game.vehicle.wheels[0].steer.rotation.y.toFixed(3), speed: +window.__RE__.stats().speedKmh.toFixed(0) }));
+await page.waitForTimeout(700);
+const s2 = await page.evaluate(() => ({ roll: +window.__RE__.game.vehicle.wheels[0].roll.rotation.x.toFixed(2) }));
+console.log(JSON.stringify({ s1, s2 }));
+await page.evaluate(() => window.__RE__.game.input.setTouch(0, 0, 0, false));
+await page.waitForTimeout(300);
+await page.evaluate(() => window.__RE__.photo(95, 5.2, 1.0));
+await page.waitForTimeout(900);
+await page.screenshot({ path: 'docs/screenshots/t-wheel-front2.png' });
+await browser.close();

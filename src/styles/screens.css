@@ -342,3 +342,19 @@
     width: min(880px, 92vw);
   }
 }
+
+/* 触屏设备隐藏键盘提示 */
+@media (pointer: coarse) {
+  .menu-bottom {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .race-row {
+    align-items: start;
+  }
+  .race-row label {
+    padding-top: 8px;
+  }
+}

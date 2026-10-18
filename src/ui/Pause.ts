@@ -1,4 +1,4 @@
-import { TIME_ORDER, TIME_PRESETS, type TimeId } from '../core/Config';
+import { TIME_ORDER, TIME_PRESETS, type QualityTier, type TimeId } from '../core/Config';
 
 export interface PauseHandlers {
   onResume(): void;
@@ -7,13 +7,20 @@ export interface PauseHandlers {
   onTime(id: TimeId): void;
   onMute(muted: boolean): void;
   onRain(on: boolean): void;
+  onQuality(tier: QualityTier): void;
+  onInvertSteer(on: boolean): void;
 }
+
+const QUALITY_LABEL: Record<QualityTier, string> = { low: '低', medium: '中', high: '高', ultra: '极致' };
+const QUALITY_ORDER: QualityTier[] = ['low', 'medium', 'high', 'ultra'];
 
 /** 暂停菜单：继续 / 重新开始 / 返回菜单 + 时段 + 声音 */
 export class Pause {
   private readonly root: HTMLDivElement;
   private muted = false;
   private rain = false;
+  private quality: QualityTier = 'high';
+  private invert = false;
 
   constructor(
     container: HTMLElement,
@@ -28,6 +35,8 @@ export class Pause {
         <div class="pause-actions">
           <button class="race-ghost" data-act="mute">声音：开</button>
           <button class="race-ghost" data-act="rain">天气：晴</button>
+          <button class="race-ghost" data-act="quality">画质：高</button>
+          <button class="race-ghost" data-act="steer">转向：标准</button>
           <button class="race-ghost" data-act="menu">返回菜单</button>
           <button class="race-ghost" data-act="restart">重新开始</button>
           <button class="race-go" data-act="resume">继续驾驶</button>
@@ -72,6 +81,33 @@ export class Pause {
       this.setWeather(this.rain);
       this.handlers.onRain(this.rain);
     });
+    this.root.querySelector('[data-act="quality"]')?.addEventListener('click', (event) => {
+      const index = QUALITY_ORDER.indexOf(this.quality);
+      const next = QUALITY_ORDER[(index + 1) % QUALITY_ORDER.length];
+      this.setQuality(next);
+      this.handlers.onQuality(next);
+      const btn = event.currentTarget as HTMLButtonElement;
+      btn.textContent = `画质：${QUALITY_LABEL[next]}`;
+    });
+    this.root.querySelector('[data-act="steer"]')?.addEventListener('click', () => {
+      this.invert = !this.invert;
+      this.setInvertSteer(this.invert);
+      this.handlers.onInvertSteer(this.invert);
+    });
+  }
+
+  /** 同步画质按钮文案 */
+  setQuality(tier: QualityTier): void {
+    this.quality = tier;
+    const btn = this.root.querySelector<HTMLButtonElement>('[data-act="quality"]');
+    if (btn) btn.textContent = `画质：${QUALITY_LABEL[tier]}`;
+  }
+
+  /** 同步转向反转文案 */
+  setInvertSteer(on: boolean): void {
+    this.invert = on;
+    const btn = this.root.querySelector<HTMLButtonElement>('[data-act="steer"]');
+    if (btn) btn.textContent = on ? '转向：反向' : '转向：标准';
   }
 
   /** 同步天气按钮文案（外部开关雨时也要更新） */

@@ -104,6 +104,7 @@ export class RenderEngine {
   readonly renderer: THREE.WebGLRenderer;
   readonly canvas: HTMLCanvasElement;
   quality: QualitySettings;
+  tier: QualityTier = 'high';
   private composer: EffectComposer | null = null;
   private renderPass: RenderPass | null = null;
   private bloomPass: UnrealBloomPass | null = null;
@@ -122,6 +123,7 @@ export class RenderEngine {
     readonly camera: THREE.PerspectiveCamera,
     tier: QualityTier,
   ) {
+    this.tier = tier;
     this.quality = QUALITY[tier];
     this.renderer = new THREE.WebGLRenderer({
       antialias: false,
@@ -204,6 +206,7 @@ export class RenderEngine {
   }
 
   setTier(tier: QualityTier): void {
+    this.tier = tier;
     this.quality = QUALITY[tier];
     this.build();
   }

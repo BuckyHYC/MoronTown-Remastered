@@ -24,7 +24,7 @@ export interface SaveData {
   achievements: string[];
   titles: number;
   audio: { muted: boolean; bgm: number; sfx: number };
-  control: { mode: 'desktop' | 'mobile'; density: 'low' | 'medium' | 'high' };
+  control: { mode: 'desktop' | 'mobile'; density: 'low' | 'medium' | 'high'; invertSteer: boolean };
   video: {
     quality: 'auto' | 'low' | 'medium' | 'high' | 'ultra';
     timeOfDay: string;
@@ -60,7 +60,7 @@ export function defaultSave(): SaveData {
     achievements: [],
     titles: 0,
     audio: { muted: false, bgm: 0.5, sfx: 0.7 },
-    control: { mode: 'desktop', density: 'medium' },
+    control: { mode: 'desktop', density: 'medium', invertSteer: false },
     video: { quality: 'high', timeOfDay: 'day', rain: false, hudScale: 1, shake: true, speedFov: true },
   };
 }
@@ -126,6 +126,7 @@ export function parseSave(raw: unknown): SaveData {
       density: (['low', 'medium', 'high'] as const).includes(control.density as never)
         ? (control.density as SaveData['control']['density'])
         : 'medium',
+      invertSteer: bool(control.invertSteer, false),
     },
     video: {
       quality: (['auto', 'low', 'medium', 'high', 'ultra'] as const).includes(video.quality as never)
@@ -180,3 +181,4 @@ function safeStorage(): Storage | null {
     return null;
   }
 }
+

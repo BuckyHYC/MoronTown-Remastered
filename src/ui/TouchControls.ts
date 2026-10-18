@@ -1,5 +1,6 @@
 export interface TouchHandlers {
   onCamera(): void;
+  onPause(): void;
 }
 
 /**
@@ -38,6 +39,7 @@ export class TouchControls {
           <button class="touch-btn touch-gas" data-act="gas">油门</button>
         </div>
       </div>
+      <button class="touch-btn touch-pause" data-act="pause" aria-label="暂停">Ⅱ</button>
     `;
     container.appendChild(this.root);
     const q = <T extends Element>(sel: string): T => {
@@ -95,6 +97,7 @@ export class TouchControls {
       btn.addEventListener('pointercancel', release);
     }
     q('[data-act="camera"]').addEventListener('click', () => this.handlers.onCamera());
+    q('[data-act="pause"]').addEventListener('click', () => this.handlers.onPause());
   }
 
   private applyPedal(act: 'gas' | 'brake' | 'handbrake', down: boolean): void {

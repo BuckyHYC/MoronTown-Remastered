@@ -1,0 +1,14 @@
+import { chromium, devices } from '@playwright/test';
+const browser = await chromium.launch({ channel: 'chrome', args: ['--enable-gpu','--use-angle=d3d11','--force_high_performance_gpu','--ignore-gpu-blocklist'] });
+const ctx = await browser.newContext({ ...devices['iPhone 12'], viewport: { width: 390, height: 844 } });
+const page = await ctx.newPage();
+page.on('pageerror', (e) => console.log('[pageerror] ' + e.message));
+await page.goto('http://localhost:5174/?quality=medium&autostart=1', { waitUntil: 'load' });
+await page.waitForFunction(() => !!window.__RE__, { timeout: 60000 });
+await page.waitForTimeout(2500);
+await page.tap('.touch-pause');
+await page.waitForTimeout(900);
+await page.screenshot({ path: 'docs/screenshots/mobile-pause.png' });
+const state = await page.evaluate(() => ({ paused: window.__RE__.game.paused ?? null, pauseVisible: !document.querySelector('.pause')?.classList.contains('hidden') }));
+console.log(JSON.stringify(state));
+await browser.close();

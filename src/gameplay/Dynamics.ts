@@ -137,9 +137,11 @@ export class VehicleDynamics {
     const targetRpm = this.targetRpm(Math.abs(s.speed));
     s.rpm += (targetRpm - s.rpm) * Math.min(1, dt * DRIVETRAIN.RPM_RESPONSE);
 
-    const speedRatio = Math.min(Math.abs(s.speed) / spec.topSpeedMs, 1);
-    const targetSteer =
-      input.steer * PHYSICS.MAX_STEER_ANGLE * (1 - speedRatio * speedRatio * PHYSICS.STEER_SPEED_FACTOR);
+    // 抓地限制转向：tan(δ) ≤ a_max·L/v²，低速保留满舵，高速自动收窄
+    const speedAbs = Math.max(3, Math.abs(s.speed));
+    const maxTan = (PHYSICS.MAX_LATERAL_ACCEL * PHYSICS.WHEELBASE) / (speedAbs * speedAbs);
+    const maxSteer = Math.min(PHYSICS.MAX_STEER_ANGLE, Math.atan(maxTan));
+    const targetSteer = input.steer * maxSteer;
     const steerDelta = spec.steerRate * PHYSICS.STEER_RESPONSE * dt;
     if (s.steerAngle < targetSteer) s.steerAngle = Math.min(s.steerAngle + steerDelta, targetSteer);
     else if (s.steerAngle > targetSteer) s.steerAngle = Math.max(s.steerAngle - steerDelta, targetSteer);

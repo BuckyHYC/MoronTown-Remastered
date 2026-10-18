@@ -96,6 +96,7 @@ class Game {
   private menuAngle = 2.15;
   private headlights: THREE.SpotLight[] = [];
   private readonly lampLights: THREE.PointLight[] = [];
+  private invertSteer = false;
   private cockpitLight: THREE.PointLight | null = null;
   private heroLight: THREE.PointLight | null = null;
   private heroFill: THREE.PointLight | null = null;
@@ -179,11 +180,22 @@ class Game {
         this.audio.setMuted(muted);
       },
       onRain: (on) => this.toggleRain(on),
+      onQuality: (tier) => {
+        this.engine.setTier(tier);
+        this.save.data.video.quality = tier;
+        this.save.save();
+      },
+      onInvertSteer: (on) => {
+        this.invertSteer = on;
+        this.save.data.control.invertSteer = on;
+        this.save.save();
+      },
     });
+    this.invertSteer = this.save.data.control.invertSteer;
     if (isTouchDevice()) {
       this.touch = new TouchControls(
         ui,
-        { onCamera: () => this.cycleCamera() },
+        { onCamera: () => this.cycleCamera(), onPause: () => this.setPaused(true) },
         (steer, throttle, brake, handbrake) => {
           this.input.setTouch(steer, throttle, brake, handbrake);
           if (!steer && !throttle && !brake && !handbrake) this.input.clearTouch();
@@ -327,9 +339,12 @@ class Game {
 
     if (this.mode !== 'menu' && !this.paused) {
       const locked = this.race?.phase === 'countdown';
+      const raw = this.input.state;
+      // 触屏/键鼠手感差异大，允许在暂停菜单里反转向
+      const sign = this.invertSteer ? -1 : 1;
       const driveInput = locked
         ? { throttle: 0, brake: 0, steer: 0, handbrake: true }
-        : this.input.state;
+        : { throttle: raw.throttle, brake: raw.brake, steer: raw.steer * sign, handbrake: raw.handbrake };
       for (let i = 0; i < info.steps; i += 1) {
         this.dynamics.step(dt, driveInput);
         this.resolveCollisions();
@@ -673,6 +688,8 @@ class Game {
     if (paused) {
       this.pause.show(this.timeId);
       this.pause.setWeather(this.rainOn);
+      this.pause.setQuality(this.engine.tier);
+      this.pause.setInvertSteer(this.invertSteer);
       this.audio.suspend();
     } else {
       this.pause.hide();
@@ -1032,6 +1049,7 @@ async function main(): Promise<void> {
 }
 
 void main();
+
 
 
 

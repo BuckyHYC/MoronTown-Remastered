@@ -105,6 +105,8 @@ export const PHYSICS = {
   MAX_SUBSTEPS: 4,
   WHEELBASE: 2.7,
   MAX_STEER_ANGLE: 0.34,
+  /** 抓地上限（m/s²）：高速时按 v²/R 限制方向锁，避免 80km/h 一把满舵就甩头 */
+  MAX_LATERAL_ACCEL: 26,
   STEER_RESPONSE: 1.8,
   STEER_SPEED_FACTOR: 0.72,
   HAND_BRAKE_GRIP: 0.55,

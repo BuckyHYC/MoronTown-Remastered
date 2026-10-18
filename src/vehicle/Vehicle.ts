@@ -225,6 +225,12 @@ export class VehicleModel {
       this.body.updateMatrixWorld(true);
 
       roll.attach(node);
+      // 刹车卡钳固定在转向节上：只跟着打方向，不随轮毂旋转
+      const calipers: THREE.Object3D[] = [];
+      node.traverse((child) => {
+        if (/brake\s*pad|caliper/i.test(child.name)) calipers.push(child);
+      });
+      for (const caliper of calipers) steer.attach(caliper);
       // 轮胎是独立节点：按包围盒中心就近归入对应车轮
       for (const tire of [...tireNodes]) {
         const tireCenter = new THREE.Box3().setFromObject(tire).getCenter(new THREE.Vector3());
@@ -319,10 +325,13 @@ export class VehicleModel {
   }
 
   /** 车轮滚动 + 前轮转向（视觉） */
-  syncWheels(wheelRoll: number, steerAngle: number, driftPose: number, steerInput: number): void {
-    const counterSteer = steerAngle * (1 - 2 * driftPose) * (steerInput !== 0 ? 1 : 0);
+  syncWheels(wheelRoll: number, steerAngle: number, _driftPose: number, _steerInput: number): void {
+    // 前轮始终跟随实际转角（不再做漂移反打，避免看起来像左右反了）
+    const counterSteer = steerAngle;
+    // 动力学按 0.34m 半径累计滚动角，按实际轮径换算，避免视觉打滑
+    const rollScale = 0.34 / Math.max(0.2, this.wheelRadius);
     for (const wheel of this.wheels) {
-      wheel.roll.rotation.x = wheelRoll;
+      wheel.roll.rotation.x = wheelRoll * rollScale;
       if (wheel.axle === 'front') {
         wheel.steer.rotation.y = counterSteer;
       }
