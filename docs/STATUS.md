@@ -110,3 +110,10 @@
 - `playwright.config.ts`：chrome + SwiftShader 参数、1280×800、复用 5174 dev server、单 worker。
 - `tests/e2e/smoke.spec.ts`：4 条冒烟用例（启动无报错进菜单 / 驾驶产生速度 / 按 T 切换昼夜 / 竞速设置开局进入倒计时），全部通过，总耗时约 29s（low 档，软件渲染）。
 - 回归网现状：9 条 vitest 单测 + 4 条 e2e 冒烟；视觉回归（截图基线）仍未建立。
+
+## Round 8：雨幕尝试回滚 + 自适应分辨率黑屏修复
+
+- 尝试加入雨幕（src/fx/Rain.ts），首帧截图整屏黑，回滚该模块。
+- 定位到真正原因：Round 6 的自适应分辨率在 SwiftShader/合成器路径下调用 composer.setPixelRatio + setSize 后输出变黑（drawcall 仍有 271，但帧缓冲全黑）。现改为 daptiveEnabled = false 默认关闭，验证截图恢复正常（33KB 黑屏 → 763KB 正常）。
+- 后续需在真实 GPU 上重新验证自适应分支，再决定是否默认开启。
+

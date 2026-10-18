@@ -58,6 +58,7 @@ class Game {
   private saveTimer = 0;
   private adaptiveTimer = 0;
   private renderScale = 1;
+  private adaptiveEnabled = false;
   readonly pause: Pause;
   private paused = false;
   private race: RaceManager | null = null;
@@ -267,7 +268,8 @@ class Game {
     this.engine.render();
 
     this.trackProgress(frameDt);
-    this.updateAdaptiveScale(frameDt);
+    // 自适应分辨率默认关闭：SwiftShader 下 composer.setPixelRatio 会导致合成器输出黑屏
+    if (this.adaptiveEnabled) this.updateAdaptiveScale(frameDt);
     this.elapsed += frameDt;
     if (this.mode !== 'menu') this.raceTimeMs += frameDt * 1000;
 
