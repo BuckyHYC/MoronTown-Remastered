@@ -94,3 +94,13 @@
   结论：low 档在集显上仍有 40fps，可用于无头/弱机；high 档必须在独显上复测（Chrome headless 未选中 RTX 5070，待有窗口模式下再验证）。
 - `tests/unit/*.test.ts`：9 条单测（极速夹紧、自动升挡、刹车/倒车、换车参数、日期键、每日任务确定性、签到奖励封顶、成就判定），`npx vitest run` 全绿。
 - 尚未建立 Playwright e2e 与视觉回归基线。
+
+## Round 6：自适应分辨率 + 有窗口实测
+
+- `main.updateAdaptiveScale`：每秒采样一次，FPS<50 时按 0.1 降 renderScale（下限 0.55），FPS>57 时按 0.05 回升（上限 1），菜单态不触发。
+- 有窗口 Chrome（headless:false，1600×900）实测仍被系统分配到 **Intel UHD**（Optimus 下浏览器走集显）：
+  | 配置 | avg fps | 1% low | pixelRatio |
+  |---|---|---|---|
+  | high 档、自适应关闭（旧） | 12.0 | 8.2 | 1.00 |
+  | high 档、自适应开启（新） | 29.4 | 23.4 | 0.55 |
+  同一场景帧率提升约 2.4×。**RTX 5070 仍未取得实测数据**：Chrome 在该机器上始终选择 Intel UHD，需通过 Windows 图形首选项把 chrome.exe 指到高性能 GPU 后复测（属用户系统设置，未擅自修改）。

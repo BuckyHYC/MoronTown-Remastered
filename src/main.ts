@@ -56,6 +56,8 @@ class Game {
   readonly peds: Pedestrians;
   private pendingKm = 0;
   private saveTimer = 0;
+  private adaptiveTimer = 0;
+  private renderScale = 1;
   readonly pause: Pause;
   private paused = false;
   private race: RaceManager | null = null;
@@ -265,6 +267,7 @@ class Game {
     this.engine.render();
 
     this.trackProgress(frameDt);
+    this.updateAdaptiveScale(frameDt);
     this.elapsed += frameDt;
     if (this.mode !== 'menu') this.raceTimeMs += frameDt * 1000;
 
@@ -443,6 +446,21 @@ class Game {
     this.menu?.setCoins(this.save.data.coins);
   }
 
+  /** 自适应分辨率：帧率低于 50 降采样、高于 57 回升，范围 0.55~1 */
+  private updateAdaptiveScale(frameDt: number): void {
+    if (this.mode === 'menu') return;
+    this.adaptiveTimer += frameDt;
+    if (this.adaptiveTimer < 1) return;
+    this.adaptiveTimer = 0;
+    const fps = this.clock.fps;
+    if (fps <= 0) return;
+    let next = this.renderScale;
+    if (fps < 50) next = Math.max(0.55, this.renderScale - 0.1);
+    else if (fps > 57) next = Math.min(1, this.renderScale + 0.05);
+    if (Math.abs(next - this.renderScale) < 1e-3) return;
+    this.renderScale = next;
+    this.engine.setRenderScale(next);
+  }
   /** 里程 / 极速 / 步行统计（每 0.1km 落盘一次） */
   private trackProgress(frameDt: number): void {
     if (this.mode === 'menu' || this.paused) return;
