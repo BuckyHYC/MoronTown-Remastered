@@ -124,3 +124,9 @@
 - main.adaptiveEnabled 重新置 true；night/day 两张截图分别 456KB / 827KB，均正常渲染，无黑屏。
 - 自适应仍在 SwiftShader 下工作（fps 低时降采样），真实 GPU 档位验证待补。
 
+
+## Round 10：渲染回归守卫
+
+- 	ests/e2e/visual.spec.ts：夜间/白天各一条，断言 triangles>5万、时段正确、截图像素量>120KB——专门拦截「drawcall 正常但合成器输出全黑」这类事故（Round 8 踩过）。
+- e2e 总数 6 条，全部通过。
+
