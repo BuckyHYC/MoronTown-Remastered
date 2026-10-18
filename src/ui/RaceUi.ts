@@ -156,7 +156,14 @@ export class RaceUi {
     this.countdown.classList.add('hidden');
   }
 
-  showResults(result: RaceResult, reward: number, best: boolean, onRestart: () => void, onExit: () => void): void {
+  showResults(
+    result: RaceResult,
+    reward: number,
+    best: boolean,
+    onRestart: () => void,
+    onExit: () => void,
+    onFreeRoam: () => void,
+  ): void {
     this.onRestart = onRestart;
     this.onExit = onExit;
     const medal = result.position === 1 ? '冠军' : result.position === 2 ? '亚军' : result.position === 3 ? '季军' : '完赛';
@@ -171,7 +178,7 @@ export class RaceUi {
           <div><span>奖励</span><b>◈ ${reward}</b></div>
         </div>
         <div class="result-actions">
-          <button class="race-ghost" data-act="exit">返回菜单</button>
+          <button class="race-ghost" data-act="free">自由漫游</button>`n          <button class="race-ghost" data-act="exit">返回菜单</button>
           <button class="race-go" data-act="again">再来一局</button>
         </div>
       </div>
@@ -181,7 +188,7 @@ export class RaceUi {
       this.hideResults();
       this.onRestart?.();
     });
-    this.results.querySelector('[data-act="exit"]')?.addEventListener('click', () => {
+    this.results.querySelector('[data-act="free"]')?.addEventListener('click', () => {`n      this.hideResults();`n      onFreeRoam();`n    });`n    this.results.querySelector('[data-act="exit"]')?.addEventListener('click', () => {
       this.hideResults();
       this.onExit?.();
     });
