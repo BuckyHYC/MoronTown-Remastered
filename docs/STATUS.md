@@ -104,3 +104,9 @@
   | high 档、自适应关闭（旧） | 12.0 | 8.2 | 1.00 |
   | high 档、自适应开启（新） | 29.4 | 23.4 | 0.55 |
   同一场景帧率提升约 2.4×。**RTX 5070 仍未取得实测数据**：Chrome 在该机器上始终选择 Intel UHD，需通过 Windows 图形首选项把 chrome.exe 指到高性能 GPU 后复测（属用户系统设置，未擅自修改）。
+
+## Round 7：Playwright e2e 冒烟基线
+
+- `playwright.config.ts`：chrome + SwiftShader 参数、1280×800、复用 5174 dev server、单 worker。
+- `tests/e2e/smoke.spec.ts`：4 条冒烟用例（启动无报错进菜单 / 驾驶产生速度 / 按 T 切换昼夜 / 竞速设置开局进入倒计时），全部通过，总耗时约 29s（low 档，软件渲染）。
+- 回归网现状：9 条 vitest 单测 + 4 条 e2e 冒烟；视觉回归（截图基线）仍未建立。
