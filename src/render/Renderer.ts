@@ -131,6 +131,9 @@ export class RenderEngine {
     });
     this.canvas = this.renderer.domElement;
     this.canvas.style.display = 'block';
+    // 画布始终铺满容器：渲染分辨率由 pixelRatio/renderScale 决定，CSS 负责放大
+    this.canvas.style.width = '100%';
+    this.canvas.style.height = '100%';
     container.appendChild(this.canvas);
 
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -230,12 +233,8 @@ export class RenderEngine {
     this.height = Math.max(1, Math.floor(height));
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(this.width, this.height, false);
-    this.composer?.setSize(this.width, this.height);
-    if (this.aaPass instanceof SMAAPass) this.aaPass.setSize(this.width, this.height);
-    if (this.aaPass instanceof ShaderPass) {
-      this.aaPass.material.uniforms.resolution.value.set(1 / this.width, 1 / this.height);
-    }
+    // 统一走 applyPixelRatio：保持 renderScale 生效，避免 resize 后分辨率跳回全量
+    this.applyPixelRatio();
   }
 
   applyPreset(preset: TimePreset): void {

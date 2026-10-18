@@ -243,6 +243,30 @@ export class VehicleModel {
     this.wheelBase = Math.abs(this.frontAxleZ - this.rearAxleZ) || this.wheelBase;
   }
 
+  /** 座舱视角是否已隐藏外壳（e2e 断言用） */
+  get cockpitHidden(): boolean {
+    return this.cockpit;
+  }
+
+  /** 座舱视角：把车外壳材质的 visible 关掉（保留内饰子节点），避免相机看到车壳内壁 */
+  setCockpit(on: boolean): void {
+    if (this.cockpit === on) return;
+    this.cockpit = on;
+    this.body.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!(mesh instanceof THREE.Mesh)) return;
+      if (/^Interior/i.test(mesh.name)) return;
+      if (!this.shellMaterials.has(mesh)) this.shellMaterials.set(mesh, mesh.material);
+      const original = this.shellMaterials.get(mesh);
+      if (on) mesh.material = this.hiddenMaterial;
+      else if (original) mesh.material = original;
+    });
+  }
+
+  private readonly shellMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  private readonly hiddenMaterial = new THREE.MeshBasicMaterial({ visible: false });
+  private cockpit = false;
+
   private computeAnchors(): void {
     const box = new THREE.Box3().setFromObject(this.body);
     this.size.set(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);

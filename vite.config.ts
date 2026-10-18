@@ -7,4 +7,9 @@ export default defineConfig({
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 2000,
   },
+  // 单测只收 tests/unit：tests/e2e 是 Playwright 用例，不能被 vitest 收集
+  test: {
+    include: ['tests/unit/**/*.test.ts'],
+    environment: 'node',
+  },
 });

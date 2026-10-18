@@ -14,12 +14,14 @@
 | 外部高模装配（Y-up 判定、车轮枢轴、车漆/玻璃/灯组、车底接触阴影） | ✅ |
 | 城市生成（124 栋建筑 + 楼层挑檐 + 屋顶设备 + 商铺橱窗 + 路灯/行道树/行人） | ✅ |
 | 驾驶（固定步长、自动变速、漂移、三视角、碰撞、震屏） | ✅ |
+| 座舱视角（隐藏车壳 + 内饰补光，仪表/方向盘可见） | ✅ |
+| 特效（胎痕、胎烟、雨幕 + 雨声 + 高速速度线） | ✅ |
 | 交通流 48 台 + 行人 72 名（可撞倒 + 金币/击杀统计） | ✅ |
 | 竞速闭环（3 赛道 / 检查点 / 倒计时 / AI / 排名 / 结算 / 奖励） | ✅ |
 | 车库（6 款车 / 涂装 / 购买装备 / 切换动力学参数） | ✅ |
 | 生涯（签到 / 每日任务 / 14 成就 / 统计 / 里程奖励） | ✅ |
 | 音频（三层引擎 / 风噪 / 胎噪 / 换挡 / 碰撞 / UI） | ✅ |
-| 暂停菜单（继续 / 重开 / 返回 / 时段 / 静音） | ✅ |
+| 暂停菜单（继续 / 重开 / 返回 / 时段 / 天气 / 静音） | ✅ |
 | 无尽模式 / 任务点竞速入口 / 触屏操作 | ⏳ |
 | 联机（P2） | ⏳ |
 | RTX 5070 1080p high 60fps 实测 | ⏳ 待验证（Chrome 固定走 Intel UHD） |
@@ -31,11 +33,11 @@ npm install
 npm run dev          # http://localhost:5174
 npm run build        # tsc --noEmit && vite build
 npm test             # vitest（9 条）
-npx playwright test  # e2e（6 条）
+npx playwright test  # e2e（10 条）
 node tools/perf-probe.mjs high 8   # 真实 GPU 性能探针
 ```
 
-调试入口：`?quality=low|medium|high|ultra`、`?time=dawn|day|dusk|night`、`?autostart=1`；
+调试入口：`?quality=low|medium|high|ultra`、`?time=dawn|day|dusk|night`、`?rain=1`、`?autostart=1`；
 控制台 `window.__RE__`（`stats()` / `text()` / `setTime()` / `start()` / `teleport()` / `photo()`）。
 
 ## 目录
@@ -50,7 +52,7 @@ src/race       赛道定义与采样
 src/meta       成就 / 每日任务 / 签到
 src/ui         HUD、主菜单、车库、生涯、暂停、竞速 UI
 src/audio      合成音频
-src/fx         特效（雨幕开发中）
+src/fx         特效（胎痕 / 胎烟 / 雨幕）
 tests/         unit（vitest）+ e2e（playwright）
 tools/         GLB 探针、截图、性能探针、诊断脚本
 docs/          蒸馏 / 美术规格 / 资产许可 / 状态
@@ -67,3 +69,4 @@ docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 - [docs/ART-BIBLE.md](docs/ART-BIBLE.md)：画质目标、色板、材质与 HUD 栅格
 - [docs/ASSETS.md](docs/ASSETS.md)：资产清单、许可与优化流程
 - [docs/STATUS.md](docs/STATUS.md)：里程碑进度、实测数据、已知缺口
+

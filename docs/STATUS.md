@@ -187,3 +187,15 @@
 - 结算面板新增「自由漫游」后全量回归：e2e 9 条全绿（1.4m）、vitest 9 条全绿、build 通过。
 - 回归网：18 条自动化用例。
 
+
+## Round 25–26：特效 + 天气 + 座舱（M8 收口）
+
+- 新增 `src/fx/GroundFx.ts`：胎痕（实例化贴地四边形 + 透明度衰减）、胎烟（点精灵 + 自定义 shader），只在漂移/手刹滑移时产生，low 档 particleBudget=0 时不出烟。
+- 新增 `src/fx/RainSystem.ts`：GPU 回绕雨幕（7000 条线段，按相机包围盒环绕平铺，每帧只更新 3 个 uniform）；总开关 N 键 / 暂停面板「天气」按钮 / `?rain=1`；下雨同时把路面湿度 +0.6（反射更强）并叠加雨声层（AudioSystem.setRain）。
+- HUD 增加高速速度线（纯 CSS 径向条纹，110km/h 起渐入，prefers-reduced-motion 关闭）。
+- 立面材质重做（facade-v3）：3.3m 层高 × 1.75m 柱距的带形窗、竖梃、层间腰线、窗间墙压暗、逐开间色差；夜间亮灯改为「整层成片 + 单窗稀疏」，不再满墙均匀白点。
+- 座舱视角修复（关键缺陷）：相机在车壳内部导致全黑。`VehicleModel.setCockpit` 在座舱视角把非内饰网格的材质 visible 关掉（保留内饰子节点），并加一盏常驻座舱补光（intensity 0→1.35，避免开关灯触发重编译）；眼点收敛为车体局部 (-0.34, 1.12, 0.12)。截图见 docs/screenshots/cockpit.png。
+- 修复「渲染分辨率 < 1 时右侧/底部黑边」：canvas 补 100% CSS 尺寸，渲染缓冲按 pixelRatio 缩放；`resize()` 统一走 `applyPixelRatio` 保持 renderScale。
+- 相机平滑改用帧时长（原用固定步长，低帧率下视角切换要 1-2 秒才就位）。
+- 新增 `tests/e2e/cockpit.spec.ts`：切座舱 → 车壳隐藏 → 截图非黑屏 → 回追尾恢复；e2e 合计 10 条。
+- 回归：vitest 9 条 + e2e 10 条全绿；build 通过（964 kB / gzip 280 kB）。

@@ -120,6 +120,40 @@ canvas {
   opacity: 0;
 }
 
+/* 高速速度线：径向收敛的细条纹，中心留空，纯 CSS 无额外渲染开销 */
+.speed-lines {
+  position: absolute;
+  inset: -6%;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(255, 255, 255, 0) 0deg 4.2deg,
+    rgba(214, 240, 255, 0.55) 4.2deg 4.55deg
+  );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 30%, #000 78%);
+  mask-image: radial-gradient(circle at 50% 50%, transparent 30%, #000 78%);
+  filter: blur(0.6px);
+  animation: speed-spin 26s linear infinite;
+  transition: opacity 0.18s linear;
+}
+
+@keyframes speed-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speed-lines {
+    display: none;
+  }
+}
+
 .hud-corner {
   position: absolute;
   display: flex;

@@ -15,6 +15,8 @@ export class CameraRig {
   private readonly desired = new THREE.Vector3();
   private readonly tmp = new THREE.Vector3();
   private fov: number = CAMERA.fov;
+  /** 座舱眼点（车体局部坐标）：x 左正右负、y 高度、z 向前 */
+  readonly cockpitEye = new THREE.Vector3(-0.34, 1.12, 0.12);
   private shake = 0;
   private initialized = false;
 
@@ -81,17 +83,16 @@ export class CameraRig {
       targetFov = CAMERA.hoodFov + (speedFovEnabled ? speedRatio * 8 : 0);
       this.look.set(world.x + fx * 30, world.y + spec.height * 0.86, world.z + fz * 30);
     } else {
-      const seatX = -0.34;
-      const seatZ = (spec.length * 0.06);
+      const { x: seatX, y: seatY, z: seatZ } = this.cockpitEye;
       this.desired.set(
         world.x + fx * seatZ + rx * seatX,
-        world.y + spec.height * CAMERA.cockpitHeightRatio,
+        world.y + seatY,
         world.z + fz * seatZ + rz * seatX,
       );
       targetFov = CAMERA.cockpitFov + (speedFovEnabled ? speedRatio * 6 : 0);
       this.look.set(
         world.x + rx * seatX + fx * 40,
-        world.y + spec.height * CAMERA.cockpitHeightRatio - 0.05,
+        world.y + seatY - 0.06,
         world.z + rz * seatX + fz * 40,
       );
     }

@@ -21,6 +21,8 @@ import { Garage } from './ui/Garage';
 import { Pause } from './ui/Pause';
 import { AudioSystem } from './audio/AudioSystem';
 import { Pedestrians } from './gameplay/Pedestrians';
+import { GroundFx } from './fx/GroundFx';
+import { RainSystem } from './fx/RainSystem';
 import { Career } from './ui/Career';
 import { achievementProgress, dailyQuests, checkInReady, nextCheckIn } from './meta/Progress';
 import './styles/screens.css';
@@ -54,6 +56,11 @@ class Game {
   readonly garage: Garage;
   readonly career: Career;
   readonly peds: Pedestrians;
+  readonly fx: GroundFx;
+  readonly rain: RainSystem | null = null;
+  private rainOn = false;
+  private readonly wheelWorld: { x: number; y: number; z: number; axle: 'front' | 'rear'; side: 'L' | 'R' }[] = [];
+  private readonly tmpWheel = new THREE.Vector3();
   private pendingKm = 0;
   private saveTimer = 0;
   private adaptiveTimer = 0;
@@ -84,6 +91,7 @@ class Game {
   private menuAngle = 2.15;
   private headlights: THREE.SpotLight[] = [];
   private readonly lampLights: THREE.PointLight[] = [];
+  private cockpitLight: THREE.PointLight | null = null;
   private lampTimer = 0;
 
   constructor(container: HTMLElement, tier: QualityTier) {
@@ -139,6 +147,14 @@ class Game {
       onClose: () => this.menu?.show(),
     });
     this.peds = new Pedestrians(this.scene, 4, 72);
+    this.fx = new GroundFx(this.scene, this.engine.quality.particleBudget);
+    this.scene.add(this.fx.group);
+    if (this.engine.quality.particleBudget > 0) {
+      this.rain = new RainSystem(7000);
+      this.scene.add(this.rain.group);
+      this.rainOn = this.save.data.video.rain;
+      this.rain.setEnabled(this.rainOn);
+    }
     this.pause = new Pause(ui, {
       onResume: () => this.setPaused(false),
       onRestart: () => this.restartMode(),
@@ -149,6 +165,7 @@ class Game {
         this.save.save();
         this.audio.setMuted(muted);
       },
+      onRain: (on) => this.toggleRain(on),
     });
     this.clock = new GameClock(PHYSICS.FIXED_STEP);
     this.input.attach(this.engine.canvas);
@@ -211,7 +228,7 @@ class Game {
     this.world.setNight(preset.neon);
     this.world.setLampIntensity(preset.lamp);
     this.signage.setNight(preset.neon);
-    this.reflector?.setWetness(preset.wetness);
+    this.reflector?.setWetness(Math.min(1, preset.wetness + (this.rainOn ? 0.6 : 0)));
     const headStrength = preset.lamp > 0.25 ? preset.lamp : 0;
     for (const spot of this.headlights) {
       spot.intensity = headStrength * 70;
@@ -226,6 +243,44 @@ class Game {
   private cycleTime(): void {
     const index = TIME_ORDER.indexOf(this.timeId);
     this.setTime(TIME_ORDER[(index + 1) % TIME_ORDER.length]);
+  }
+
+  /** 采样四个车轮的世界坐标，供胎痕/胎烟使用 */
+  private sampleWheels(): typeof this.wheelWorld {
+    this.vehicle.root.updateMatrixWorld(true);
+    this.wheelWorld.length = 0;
+    for (const wheel of this.vehicle.wheels) {
+      wheel.roll.getWorldPosition(this.tmpWheel);
+      this.wheelWorld.push({
+        x: this.tmpWheel.x,
+        y: this.tmpWheel.y,
+        z: this.tmpWheel.z,
+        axle: wheel.axle,
+        side: wheel.side,
+      });
+    }
+    return this.wheelWorld;
+  }
+
+  /** 天气开关：下雨同时提高路面湿度（反射更强、颜色更深） */
+  toggleRain(force?: boolean): void {
+    if (!this.rain) {
+      this.hud.toast('当前画质档位不支持降雨', 'warn');
+      return;
+    }
+    const next = force ?? !this.rainOn;
+    if (next === this.rainOn) return;
+    this.rainOn = next;
+    this.rain.setEnabled(next);
+    this.rain.snap(this.camera);
+    this.save.data.video.rain = next;
+    this.save.save();
+    const preset = TIME_PRESETS[this.timeId];
+    this.reflector?.setWetness(Math.min(1, preset.wetness + (next ? 0.6 : 0)));
+    this.engine.applyPreset(preset);
+    this.audio.setRain(next);
+    this.hud.toast(next ? '开始下雨' : '雨停了', 'info');
+    bus.emit('weather:changed', { rain: next });
   }
 
   private frame = (now: number): void => {
@@ -245,7 +300,17 @@ class Game {
       }
     }
 
-    this.updateWorld(dt, info.alpha);
+    this.updateWorld(info.alpha, Math.min(frameDt, 0.1));
+    if (this.mode !== 'menu') {
+      this.fx.update(frameDt, {
+        drift: this.dynamics.state.driftPose,
+        speed: this.dynamics.state.speed,
+        lateral: this.dynamics.state.lateral,
+        handbrake: this.input.state.handbrake,
+        wheels: this.sampleWheels(),
+      });
+    }
+    this.rain?.update(this.camera, frameDt);
     this.traffic.update(frameDt);
     this.updateRace(frameDt);
     if (!this.paused) this.peds.update(frameDt, this.elapsed);
@@ -300,8 +365,12 @@ class Game {
     }
   };
 
-  private updateWorld(dt: number, alpha: number): void {
+  private updateWorld(alpha: number, frameDt: number): void {
     const s = this.dynamics.state;
+    // 座舱视角隐藏车外壳（保留内饰），菜单/拍照/其它视角恢复
+    const cockpit = this.mode !== 'menu' && this.photo === null && this.rig.mode === 'cockpit';
+    this.vehicle.setCockpit(cockpit);
+    if (this.cockpitLight) this.cockpitLight.intensity = cockpit ? 1.35 : 0;
     const x = s.prevX + (s.x - s.prevX) * alpha;
     const z = s.prevZ + (s.z - s.prevZ) * alpha;
     const heading = s.prevHeading + (s.heading - s.prevHeading) * alpha;
@@ -343,7 +412,7 @@ class Game {
     }
 
     this.rig.update(
-      dt,
+      frameDt,
       this.carPos,
       heading + s.driftPose * s.steerAngle * 2.6,
       s,
@@ -379,6 +448,7 @@ class Game {
       );
     }
     if (this.input.consume('time')) this.cycleTime();
+    if (this.input.consume('weather')) this.toggleRain();
     if (this.input.consume('mute')) {
       const muted = !this.save.data.audio.muted;
       this.save.data.audio.muted = muted;
@@ -546,6 +616,7 @@ class Game {
     this.paused = paused;
     if (paused) {
       this.pause.show(this.timeId);
+      this.pause.setWeather(this.rainOn);
       this.audio.suspend();
     } else {
       this.pause.hide();
@@ -698,6 +769,11 @@ class Game {
       this.scene.add(light);
       this.lampLights.push(light);
     }
+    // 座舱补光：常驻场景（intensity=0），避免开关灯触发材质重编译
+    const cabin = new THREE.PointLight(0xffd9b4, 0, 5.2, 2);
+    cabin.position.set(-0.28, 1.25, 0.55);
+    this.vehicle.root.add(cabin);
+    this.cockpitLight = cabin;
   }
 
   private updateLampLights(dt: number): void {
@@ -806,6 +882,9 @@ class Game {
       camera: this.rig.mode,
       city: this.world.stats(),
       speedKmh: Math.round(this.dynamics.speedKmh),
+      weather: { rain: this.rainOn, drops: this.rain?.active ? this.rain.dropCount : 0 },
+      fx: { skid: this.fx.skidSegments, smoke: this.fx.smokeAlive },
+      cockpit: this.vehicle.cockpitHidden,
     };
   }
 
@@ -828,6 +907,14 @@ class Game {
           fps: Number(this.clock.fps.toFixed(1)),
         }),
       setTime: (id: TimeId) => this.setTime(id, true),
+      setRain: (on: boolean) => this.toggleRain(on),
+      /** 调试：调整座舱眼点并立即切到座舱视角 */
+      eye: (x: number, y: number, z: number) => {
+        this.rig.cockpitEye.set(x, y, z);
+        this.rig.mode = 'cockpit';
+        this.rig.snap();
+        return this.rig.cockpitEye.toArray();
+      },      weather: () => ({ rain: this.rainOn, drops: this.rain?.active ? this.rain.dropCount : 0 }),
       start: () => this.startDrive(),
       menu: () => {
         this.mode = 'menu';
@@ -864,8 +951,11 @@ async function main(): Promise<void> {
   // 开发期便捷入口：?time=night 直接进入指定时段，?autostart=1 直接开车
   const params = new URLSearchParams(location.search);
   const time = params.get('time');
-  const api = (window as unknown as { __RE__: { setTime: (id: TimeId) => void; start: () => void } }).__RE__;
+  const api = (window as unknown as {
+    __RE__: { setTime: (id: TimeId) => void; start: () => void; setRain: (on: boolean) => void };
+  }).__RE__;
   if (time && (TIME_ORDER as string[]).includes(time)) api.setTime(time as TimeId);
+  if (params.get('rain') === '1') api.setRain(true);
   if (params.get('autostart') === '1') api.start();
 }
 

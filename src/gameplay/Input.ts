@@ -1,6 +1,6 @@
 import type { DriveInput } from './Dynamics';
 
-export type ActionId = 'camera' | 'reset' | 'time' | 'pause' | 'confirm' | 'back' | 'mute';
+export type ActionId = 'camera' | 'reset' | 'time' | 'pause' | 'confirm' | 'back' | 'mute' | 'weather';
 
 /**
  * 输入：键盘 + 鼠标右键环绕（触屏与手柄后续接入同一结构）。
@@ -124,6 +124,8 @@ function keyToAction(code: string): ActionId | null {
       return 'time';
     case 'KeyM':
       return 'mute';
+    case 'KeyN':
+      return 'weather';
     case 'Escape':
       return 'pause';
     case 'Enter':

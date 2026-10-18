@@ -40,6 +40,8 @@ export class Hud {
   private killsEl: HTMLElement;
   private cameraEl: HTMLElement;
   private toastEl: HTMLElement;
+  private linesEl: HTMLElement;
+  private helpEl: HTMLElement;
   private minimap: HTMLCanvasElement;
   private toastTimer = 0;
 
@@ -47,6 +49,7 @@ export class Hud {
     this.root = document.createElement('div');
     this.root.className = 'hud';
     this.root.innerHTML = `
+      <div class="speed-lines" data-lines></div>
       <div class="hud-corner hud-tl">
         <div class="pos-block">
           <b data-pos>1</b><span data-total>/1</span>
@@ -83,7 +86,7 @@ export class Hud {
         </div>
       </div>
       <div class="hud-toast" data-toast></div>
-      <div class="hud-help">C 视角 · T 时段 · R 重置 · Esc 暂停</div>
+      <div class="hud-help">C 视角 · T 时段 · N 天气 · R 重置 · Esc 暂停</div>
     `;
     container.appendChild(this.root);
 
@@ -104,6 +107,8 @@ export class Hud {
     this.killsEl = q('[data-kills]');
     this.cameraEl = q('[data-camera]');
     this.toastEl = q('[data-toast]');
+    this.linesEl = q('[data-lines]');
+    this.helpEl = q('.hud-help');
     this.minimap = this.root.querySelector('canvas')!;
     q('[data-laps]').textContent = '01';
 
@@ -117,6 +122,9 @@ export class Hud {
     const ratio = Math.min(1, data.rpmRatio);
     this.rpmEl.style.transform = `scaleX(${0.04 + ratio * 0.96})`;
     this.ringEl.style.strokeDashoffset = `${RING_LENGTH * (1 - Math.min(1, data.speedKmh / 280))}`;
+    // 高速速度线：约 110km/h 起，260km/h 完全展开
+    const rush = Math.min(1, Math.max(0, (data.speedKmh - 110) / 150));
+    this.linesEl.style.opacity = (rush * 0.55).toFixed(3);
     this.posEl.textContent = String(data.position);
     this.totalEl.textContent = `/${data.totalRacers}`;
     this.lapEl.textContent = String(data.lap).padStart(2, '0');
@@ -124,6 +132,8 @@ export class Hud {
     this.coinsEl.textContent = `◈ ${data.coins}`;
     this.killsEl.textContent = `撞击 ${data.kills}`;
     this.cameraEl.textContent = data.cameraMode;
+    // 座舱视角里居中提示会挡住仪表/方向盘，直接淡出
+    this.helpEl.style.opacity = data.cameraMode === 'cockpit' ? '0' : '1';
     const best = this.root.querySelector('[data-best]');
     if (best) {
       best.textContent = data.bestLapMs ? `最佳 ${formatTime(data.bestLapMs)}` : '最佳 --:--.---';

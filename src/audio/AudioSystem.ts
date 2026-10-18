@@ -10,6 +10,8 @@ export class AudioSystem {
   private oscillators: OscillatorNode[] = [];
   private windGain: GainNode | null = null;
   private tireGain: GainNode | null = null;
+  private rainGain: GainNode | null = null;
+  private rainOn = false;
   private noiseBuffer: AudioBuffer | null = null;
   private muted = false;
   private bgmVolume = 0.5;
@@ -117,6 +119,22 @@ export class AudioSystem {
     tireGain.connect(master);
     tire.start();
     this.tireGain = tireGain;
+
+    // 雨声：宽频噪声 + 低通，随开关淡入淡出
+    const rain = ctx.createBufferSource();
+    rain.buffer = buffer;
+    rain.loop = true;
+    const rainFilter = ctx.createBiquadFilter();
+    rainFilter.type = 'lowpass';
+    rainFilter.frequency.value = 5200;
+    const rainGain = ctx.createGain();
+    rainGain.gain.value = 0;
+    rain.connect(rainFilter);
+    rainFilter.connect(rainGain);
+    rainGain.connect(master);
+    rain.start();
+    this.rainGain = rainGain;
+    if (this.rainOn) rainGain.gain.setTargetAtTime(0.075, ctx.currentTime, 0.8);
   }
 
   update(speedMs: number, rpmRatio: number, throttle: number, lateral: number, gear: number): void {
@@ -178,8 +196,15 @@ export class AudioSystem {
     osc.stop(ctx.currentTime + duration + 0.02);
   }
 
-  setMuted(muted: boolean): void {
-    this.muted = muted;
+  /** 雨声层开关（未初始化 AudioContext 时只记录意图） */
+  setRain(on: boolean): void {
+    this.rainOn = on;
+    if (this.rainGain && this.ctx) {
+      this.rainGain.gain.setTargetAtTime(on ? 0.075 : 0, this.ctx.currentTime, 0.8);
+    }
+  }
+
+  setMuted(muted: boolean): void {    this.muted = muted;
     if (this.master && this.ctx) {
       this.master.gain.setTargetAtTime(muted ? 0 : this.sfxVolume * 0.9, this.ctx.currentTime, 0.05);
     }

@@ -8,6 +8,7 @@ export type GameEventMap = {
   'time:changed': { id: string; instant: boolean };
   'quality:changed': { tier: string };
   'quality:auto': { tier: string };
+  'weather:changed': { rain: boolean };
   'race:phase': { phase: string; value?: number };
   'race:lap': { lap: number; bestLapMs: number };
   'race:finish': { position: number; totalMs: number; bestLapMs: number };

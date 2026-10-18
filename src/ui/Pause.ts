@@ -6,12 +6,14 @@ export interface PauseHandlers {
   onMenu(): void;
   onTime(id: TimeId): void;
   onMute(muted: boolean): void;
+  onRain(on: boolean): void;
 }
 
 /** 暂停菜单：继续 / 重新开始 / 返回菜单 + 时段 + 声音 */
 export class Pause {
   private readonly root: HTMLDivElement;
   private muted = false;
+  private rain = false;
 
   constructor(
     container: HTMLElement,
@@ -25,6 +27,7 @@ export class Pause {
         <div class="pause-times" data-times></div>
         <div class="pause-actions">
           <button class="race-ghost" data-act="mute">声音：开</button>
+          <button class="race-ghost" data-act="rain">天气：晴</button>
           <button class="race-ghost" data-act="menu">返回菜单</button>
           <button class="race-ghost" data-act="restart">重新开始</button>
           <button class="race-go" data-act="resume">继续驾驶</button>
@@ -64,6 +67,18 @@ export class Pause {
       (event.currentTarget as HTMLButtonElement).textContent = this.muted ? '声音：关' : '声音：开';
       this.handlers.onMute(this.muted);
     });
+    this.root.querySelector('[data-act="rain"]')?.addEventListener('click', () => {
+      this.rain = !this.rain;
+      this.setWeather(this.rain);
+      this.handlers.onRain(this.rain);
+    });
+  }
+
+  /** 同步天气按钮文案（外部开关雨时也要更新） */
+  setWeather(on: boolean): void {
+    this.rain = on;
+    const btn = this.root.querySelector<HTMLButtonElement>('[data-act="rain"]');
+    if (btn) btn.textContent = on ? '天气：雨' : '天气：晴';
   }
 
   show(timeId: TimeId): void {
