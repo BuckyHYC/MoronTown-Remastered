@@ -176,3 +176,8 @@
 
 - 	ests/e2e/career.spec.ts：清空签到状态 → 生涯屏领第 1 天 → 断言金币 +50、streak=1、签到日期写入。通过（10.7s）。测试总数 17 条。
 
+
+## Round 21：竞速结算 e2e
+
+- 	ests/e2e/race-result.spec.ts：开局 → 用调试入口结算第 1 名 → 断言金币 +300、races=1、raceWins=1、结算面板「再来一局」可见。通过（12.2s）。测试总数 18 条。
+
