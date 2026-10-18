@@ -358,6 +358,13 @@ class Game {
     if (this.mode === 'menu') {
       if (this.input.consume('confirm')) this.startDrive();
       if (this.input.consume('time')) this.cycleTime();
+    if (this.input.consume('mute')) {
+      const muted = !this.save.data.audio.muted;
+      this.save.data.audio.muted = muted;
+      this.save.save();
+      this.audio.setMuted(muted);
+      this.hud.toast(muted ? '已静音' : '声音已开启', 'info');
+    }
       return;
     }
     if (this.input.consume('pause')) {
@@ -372,6 +379,13 @@ class Game {
       );
     }
     if (this.input.consume('time')) this.cycleTime();
+    if (this.input.consume('mute')) {
+      const muted = !this.save.data.audio.muted;
+      this.save.data.audio.muted = muted;
+      this.save.save();
+      this.audio.setMuted(muted);
+      this.hud.toast(muted ? '已静音' : '声音已开启', 'info');
+    }
     if (this.input.consume('reset')) {
       this.dynamics.reset(WORLD.SPAWN_X, WORLD.SPAWN_Z, Math.PI * 0.5);
       this.rig.snap();
