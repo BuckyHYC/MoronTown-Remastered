@@ -40,6 +40,7 @@ export class CityWorld {
     this.addGround();
     this.addRoads();
     this.addSidewalks();
+    this.addBlockPaving();
     this.addMarkings();
     this.addBuildings();
     this.addLamps();
@@ -55,7 +56,7 @@ export class CityWorld {
     const geometry = new THREE.PlaneGeometry(3600, 3600);
     geometry.rotateX(-Math.PI / 2);
     const mesh = new THREE.Mesh(geometry, this.mats.ground);
-    mesh.position.set(this.span / 2, -0.04, this.span / 2);
+    mesh.position.set(this.span / 2, -0.45, this.span / 2);
     mesh.receiveShadow = true;
     this.group.add(mesh);
   }
@@ -96,6 +97,24 @@ export class CityWorld {
     this.group.add(mesh);
   }
 
+  /** 街区铺装：把街块内部整片铺成广场/路缘砖，避免低机位看到大片草地 */
+  private addBlockPaving(): void {
+    const geos: THREE.BufferGeometry[] = [];
+    const inner = WORLD.BLOCK_LENGTH - WORLD.ROAD_WIDTH;
+    for (let i = 0; i < this.blocks; i += 1) {
+      for (let j = 0; j < this.blocks; j += 1) {
+        const cx = i * WORLD.BLOCK_LENGTH + WORLD.BLOCK_LENGTH / 2;
+        const cz = j * WORLD.BLOCK_LENGTH + WORLD.BLOCK_LENGTH / 2;
+        geos.push(flatPlane(inner, inner, cx, cz, 0.02));
+      }
+    }
+    const merged = mergeGeometries(geos, false);
+    if (!merged) return;
+    const mesh = new THREE.Mesh(merged, this.mats.sidewalk);
+    mesh.receiveShadow = true;
+    mesh.name = 'block-paving';
+    this.group.add(mesh);
+  }
   private addMarkings(): void {
     const white: THREE.BufferGeometry[] = [];
     const yellow: THREE.BufferGeometry[] = [];
