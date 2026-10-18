@@ -166,3 +166,8 @@
 
 - 视觉守卫改为「最多 5 次重试截图，直到像素量 >60KB」，避免首屏未渲染完成时误判黑屏；整套 e2e 恢复全绿。
 
+
+## Round 19：车库 e2e
+
+- 新增 	ests/e2e/garage.spec.ts：注入金币 → 打开车库 → 选警用车 → 购买并装备 → 断言余额 3200、car.id=police、owned 含 police、dynamics.spec.id=police。单测/e2e 合计 16 条。
+
