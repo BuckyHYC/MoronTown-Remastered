@@ -171,3 +171,8 @@
 
 - 新增 	ests/e2e/garage.spec.ts：注入金币 → 打开车库 → 选警用车 → 购买并装备 → 断言余额 3200、car.id=police、owned 含 police、dynamics.spec.id=police。单测/e2e 合计 16 条。
 
+
+## Round 20：生涯签到 e2e
+
+- 	ests/e2e/career.spec.ts：清空签到状态 → 生涯屏领第 1 天 → 断言金币 +50、streak=1、签到日期写入。通过（10.7s）。测试总数 17 条。
+
