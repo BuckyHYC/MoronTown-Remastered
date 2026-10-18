@@ -72,6 +72,13 @@ docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 
 基准图由 `node tools/gallery.mjs` 生成（1600×900，独显渲染）。
 
+## 已知缺口
+
+- **无尽模式（区块流式）未实现**：目前是 1200×1200 有限城市 + 2.4m 围墙；要做成真无限需要把 CityWorld 拆成 300m 区块做流式重建，属于 P2 级改造。
+- **联机未开始**：按约定作为 P2，界面里保留了「联机」入口但只提示待开放。
+- 建筑立面仍是程序化带形窗，远看规整；交通/行人/对手车为低模替代，与主车精度差距明显。
+- 车库没有离屏缩略图，靠主场景展台机位展示。
+
 ## 素材许可
 
 本项目使用 Khronos `CarConcept` 模型（**CC BY 4.0**，作者 Eric Chadwick / Darmstadt Graphics Group GmbH），
@@ -83,6 +90,7 @@ docs/          蒸馏 / 美术规格 / 资产许可 / 状态
 - [docs/ART-BIBLE.md](docs/ART-BIBLE.md)：画质目标、色板、材质与 HUD 栅格
 - [docs/ASSETS.md](docs/ASSETS.md)：资产清单、许可与优化流程
 - [docs/STATUS.md](docs/STATUS.md)：里程碑进度、实测数据、已知缺口
+
 
 
 
